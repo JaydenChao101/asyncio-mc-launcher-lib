@@ -9,12 +9,34 @@ from minecraft_launcher_lib.microsoft_types import AuthorizationTokenResponse, X
 from minecraft_launcher_lib.exceptions import AccountNotOwnMinecraft
 import urllib.parse
 import requests
+import logging
+
+
 
 __AUTH_URL__ = "https://login.live.com/oauth20_authorize.srf"
 __TOKEN_URL__ = "https://login.live.com/oauth20_token.srf"
 CLIENT_ID = "00000000402b5328"
 REDIRECT_URI = "https://login.live.com/oauth20_desktop.srf"
 __SCOPE__ = "service::user.auth.xboxlive.com::MBI_SSL"
+
+class LoggingSetting:
+    def __init__(self, level: int = logging.INFO, filename: str = None, enable_console: bool = False):
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(level)
+
+        formatter = logging.Formatter("%(asctime)s %(message)s", datefmt="%m/%d/%Y %I:%M:%S %p")
+
+        if enable_console:
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(level)
+            console_handler.setFormatter(formatter)
+            self.logger.addHandler(console_handler)
+
+        if filename:
+            file_handler = logging.FileHandler(filename)
+            file_handler.setLevel(level)
+            file_handler.setFormatter(formatter)
+            self.logger.addHandler(file_handler)
 
 async def get_login_url() -> str:
     """
@@ -31,8 +53,8 @@ async def get_login_url() -> str:
         "response_mode": "query",
         "scope": __SCOPE__,
     }
-
     url = urllib.parse.urlparse(__AUTH_URL__)._replace(query=urllib.parse.urlencode(parameters)).geturl()
+    logging.info(f"Login url: {url}")
     return url
 
 async def extract_code_from_url(url: str) -> str:
@@ -65,7 +87,9 @@ async def get_ms_token(code: str) -> AuthorizationTokenResponse:
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     resp = requests.post(__TOKEN_URL__, data=data, headers=headers)
     resp.raise_for_status()
-    return resp.json()
+    data = resp.json()
+    logging.info(f"Microsoft token response: {data}")
+    return data
 
 async def get_xbl_token(ms_access_token: str) -> XBLResponse:
     payload = {
@@ -74,13 +98,15 @@ async def get_xbl_token(ms_access_token: str) -> XBLResponse:
             "SiteName": "user.auth.xboxlive.com",
             "RpsTicket": ms_access_token
         },
-        "RelyingParty": "https://auth.xboxlive.com",  # 注意这里
+        "RelyingParty": "http://auth.xboxlive.com",  # 注意这里
         "TokenType": "JWT"
     }
     headers = {"Content-Type": "application/json"}
     resp = requests.post("https://user.auth.xboxlive.com/user/authenticate", json=payload, headers=headers)
     resp.raise_for_status()
-    return resp.json()
+    data = resp.json()
+    logging.info(f"Xbox Token response: {data}")
+    return data
 
 async def get_xsts_token(xbl_token: str) -> XSTSResponse:
     """
@@ -100,7 +126,9 @@ async def get_xsts_token(xbl_token: str) -> XSTSResponse:
     headers = {"Content-Type": "application/json"}
     resp = requests.post("https://xsts.auth.xboxlive.com/xsts/authorize", json=payload, headers=headers)
     resp.raise_for_status()
-    return resp.json()
+    data = resp.json()
+    logging.info(f"XSTS Token response: {data}")
+    return data
 
 async def get_minecraft_access_token(xsts_token: str, uhs: str) -> MinecraftAuthenticateResponse:
     """
@@ -115,7 +143,9 @@ async def get_minecraft_access_token(xsts_token: str, uhs: str) -> MinecraftAuth
     headers = {"Content-Type": "application/json"}
     resp = requests.post("https://api.minecraftservices.com/authentication/login_with_xbox", json=payload, headers=headers)
     resp.raise_for_status()
-    return resp.json()
+    data = resp.json()
+    logging.info(f"Minecraft access token response: {data}")
+    return data
 
 async def have_minecraft(access_token : str) -> bool:
     """
@@ -129,7 +159,7 @@ async def have_minecraft(access_token : str) -> bool:
     resp.raise_for_status()
     data = resp.json()
     if not data.get("items"):
-        raise AccountNotOwnMinecraft
+        raise AccountNotOwnMinecraft()
     return True
 
 async def get_minecraft_profile(access_token: str) -> MinecraftProfileResponse:
