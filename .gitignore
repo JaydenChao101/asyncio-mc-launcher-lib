@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+.idea/
+
 # C extensions
 *.so
 
@@ -51,6 +53,7 @@ coverage.xml
 .pytest_cache/
 cover/
 
+
 # Translations
 *.mo
 *.pot
@@ -93,6 +96,7 @@ ipython_config.py
 #   having no cross-platform support, pipenv may install dependencies that don't work, or not
 #   install all needed dependencies.
 #Pipfile.lock
+
 
 # UV
 #   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
