@@ -46,30 +46,36 @@ def replace_arguments(argstr: str, versionData: ClientJson, path: str, options: 
     """
     Replace all placeholder in arguments with the needed value
     """
-    argstr = argstr.replace("${natives_directory}", options["nativesDirectory"])
-    argstr = argstr.replace("${launcher_name}", options.get("launcherName", "minecraft-launcher-lib"))
-    argstr = argstr.replace("${launcher_version}", options.get("launcherVersion", get_library_version()))
-    argstr = argstr.replace("${classpath}", classpath)
-    argstr = argstr.replace("${auth_player_name}", options.get("username", "{username}"))
-    argstr = argstr.replace("${version_name}", versionData["id"])
-    argstr = argstr.replace("${game_directory}", options.get("gameDirectory", path))
-    argstr = argstr.replace("${assets_root}", os.path.join(path, "assets"))
-    argstr = argstr.replace("${assets_index_name}", versionData.get("assets", versionData["id"]))
-    argstr = argstr.replace("${auth_uuid}", options.get("uuid", "{uuid}"))
-    argstr = argstr.replace("${auth_access_token}", options.get("token", "{token}"))
-    argstr = argstr.replace("${user_type}", "msa")
-    argstr = argstr.replace("${version_type}", versionData["type"])
-    argstr = argstr.replace("${user_properties}", "{}")
-    argstr = argstr.replace("${resolution_width}", options.get("resolutionWidth", "854"))
-    argstr = argstr.replace("${resolution_height}", options.get("resolutionHeight", "480"))
-    argstr = argstr.replace("${game_assets}", os.path.join(path, "assets", "virtual", "legacy"))
-    argstr = argstr.replace("${auth_session}", options.get("token", "{token}"))
-    argstr = argstr.replace("${library_directory}", os.path.join(path, "libraries"))
-    argstr = argstr.replace("${classpath_separator}", get_classpath_separator())
-    argstr = argstr.replace("${quickPlayPath}", options.get("quickPlayPath") or "{quickPlayPath}")
-    argstr = argstr.replace("${quickPlaySingleplayer}", options.get("quickPlaySingleplayer") or "{quickPlaySingleplayer}")
-    argstr = argstr.replace("${quickPlayMultiplayer}", options.get("quickPlayMultiplayer") or "{quickPlayMultiplayer}")
-    argstr = argstr.replace("${quickPlayRealms}", options.get("quickPlayRealms") or "{quickPlayRealms}")
+    arg_replacements = {
+        "${natives_directory}": options["nativesDirectory"],
+        "${launcher_name}": options.get("launcherName", "minecraft-launcher-lib"),
+        "${launcher_version}": options.get("launcherVersion", get_library_version()),
+        "${classpath}": classpath,
+        "${auth_player_name}": options.get("username", "{username}"),
+        "${version_name}": versionData["id"],
+        "${game_directory}": options.get("gameDirectory", path),
+        "${assets_root}": os.path.join(path, "assets"),
+        "${assets_index_name}": versionData.get("assets", versionData["id"]),
+        "${auth_uuid}": options.get("uuid", "{uuid}"),
+        "${auth_access_token}": options.get("token", "{token}"),
+        "${user_type}": "msa",
+        "${version_type}": versionData["type"],
+        "${user_properties}": "{}",
+        "${resolution_width}": options.get("resolutionWidth", "854"),
+        "${resolution_height}": options.get("resolutionHeight", "480"),
+        "${game_assets}": os.path.join(path, "assets", "virtual", "legacy"),
+        "${auth_session}": options.get("token", "{token}"),
+        "${library_directory}": os.path.join(path, "libraries"),
+        "${classpath_separator}": get_classpath_separator(),
+        "${quickPlayPath}": options.get("quickPlayPath") or "{quickPlayPath}",
+        "${quickPlaySingleplayer}": options.get("quickPlaySingleplayer") or "{quickPlaySingleplayer}",
+        "${quickPlayMultiplayer}": options.get("quickPlayMultiplayer") or "{quickPlayMultiplayer}",
+        "${quickPlayRealms}": options.get("quickPlayRealms") or "{quickPlayRealms}",
+    }
+
+    for key, value in arg_replacements.items():
+        argstr = argstr.replace(key, value)
+
     return argstr
 
 

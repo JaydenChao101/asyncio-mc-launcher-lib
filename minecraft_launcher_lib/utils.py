@@ -126,7 +126,7 @@ def get_available_versions(minecraft_directory: str | os.PathLike) -> list[Minec
         version_check.append(i["id"])
 
     for i in get_installed_versions(minecraft_directory):
-        if not i["id"] in version_check:
+        if i["id"] not in version_check:
             version_list.append(i)
 
     return version_list
