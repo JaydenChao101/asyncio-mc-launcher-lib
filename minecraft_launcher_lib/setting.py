@@ -8,17 +8,19 @@ class LoggingSetting:
 
         formatter = logging.Formatter("%(asctime)s %(message)s", datefmt="%m/%d/%Y %I:%M:%S %p")
 
-        if enable_console:
-            console_handler = logging.StreamHandler()
-            console_handler.setLevel(level)
-            console_handler.setFormatter(formatter)
-            self.logger.addHandler(console_handler)
+        # 防止重复添加 handler
+        if not self.logger.handlers:
+            if enable_console:
+                console_handler = logging.StreamHandler()
+                console_handler.setLevel(level)
+                console_handler.setFormatter(formatter)
+                self.logger.addHandler(console_handler)
 
-        if filename:
-            file_handler = logging.FileHandler(filename)
-            file_handler.setLevel(level)
-            file_handler.setFormatter(formatter)
-            self.logger.addHandler(file_handler)
+            if filename:
+                file_handler = logging.FileHandler(filename)
+                file_handler.setLevel(level)
+                file_handler.setFormatter(formatter)
+                self.logger.addHandler(file_handler)
 
 class RequestsSetting:
     def __init__(
@@ -72,4 +74,3 @@ class RequestsSetting:
 
     def post(self, url: str, **kwargs):
         return self.request("POST", url, **kwargs)
-
