@@ -7,10 +7,8 @@
 from minecraft_launcher_lib.microsoft_types import AuthorizationTokenResponse, XBLResponse, XSTSResponse, MinecraftAuthenticateResponse, MinecraftProfileResponse
 from minecraft_launcher_lib.exceptions import AccountNotOwnMinecraft
 import urllib.parse
-from minecraft_launcher_lib.setting import LoggingSetting, RequestsSetting
-
-logger = LoggingSetting().logger
-req_setting = RequestsSetting()
+import requests
+from minecraft_launcher_lib import logger
 
 __AUTH_URL__ = "https://login.live.com/oauth20_authorize.srf"
 __TOKEN_URL__ = "https://login.live.com/oauth20_token.srf"
@@ -21,10 +19,7 @@ __SCOPE__ = "service::user.auth.xboxlive.com::MBI_SSL"
 
 async def get_login_url() -> str:
     """
-    Generate a login url.\\
-    For a more secure alternative, use :func:`get_secure_login_data`
-
-
+    Generate a login url.
     :return: The url to the website on which the user logs in
     """
     parameters = {
@@ -35,8 +30,7 @@ async def get_login_url() -> str:
         "scope": __SCOPE__,
     }
     url = urllib.parse.urlparse(__AUTH_URL__)._replace(query=urllib.parse.urlencode(parameters)).geturl()
-    logger.info(f"Login url: {url}")
-
+    logger.info(f"Login url: {url}")  # Re-enabled logging of login URL.
     return url
 
 async def extract_code_from_url(url: str) -> str:
@@ -67,7 +61,7 @@ async def get_ms_token(code: str) -> AuthorizationTokenResponse:
         "scope": __SCOPE__,
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    resp = req_setting.post(__TOKEN_URL__, data=data, headers=headers)
+    resp = requests.post(__TOKEN_URL__, data=data, headers=headers)
     resp.raise_for_status()
     data = resp.json()
     logger.info(f"Microsoft token response: {data}")
@@ -84,7 +78,7 @@ async def get_xbl_token(ms_access_token: str) -> XBLResponse:
         "TokenType": "JWT"
     }
     headers = {"Content-Type": "application/json"}
-    resp = req_setting.post("https://user.auth.xboxlive.com/user/authenticate", json=payload, headers=headers)
+    resp = requests.post("https://user.auth.xboxlive.com/user/authenticate", json=payload, headers=headers)
     resp.raise_for_status()
     data = resp.json()
     logger.info(f"Xbox Token response: {data}")
@@ -106,7 +100,7 @@ async def get_xsts_token(xbl_token: str) -> XSTSResponse:
         "TokenType": "JWT"
     }
     headers = {"Content-Type": "application/json"}
-    resp = req_setting.post("https://xsts.auth.xboxlive.com/xsts/authorize", json=payload, headers=headers)
+    resp = requests.post("https://xsts.auth.xboxlive.com/xsts/authorize", json=payload, headers=headers)
     resp.raise_for_status()
     data = resp.json()
     logger.info(f"XSTS Token response: {data}")
@@ -123,7 +117,7 @@ async def get_minecraft_access_token(xsts_token: str, uhs: str) -> MinecraftAuth
     identity_token = f"XBL3.0 x={uhs};{xsts_token}"
     payload = {"identityToken": identity_token}
     headers = {"Content-Type": "application/json"}
-    resp = req_setting.post("https://api.minecraftservices.com/authentication/login_with_xbox", json=payload, headers=headers)
+    resp = requests.post("https://api.minecraftservices.com/authentication/login_with_xbox", json=payload, headers=headers)
     resp.raise_for_status()
     data = resp.json()
     logger.info(f"Minecraft access token response: {data}")
@@ -137,7 +131,7 @@ async def have_minecraft(access_token : str) -> bool:
     :return: True if the user owns Minecraft, Raise AccountNotOwnMinecraft otherwise
     """
     headers = {"Authorization": f"Bearer {access_token}"}
-    resp = req_setting.get("https://api.minecraftservices.com/entitlements/mcstore", headers=headers)
+    resp = requests.get("https://api.minecraftservices.com/entitlements/mcstore", headers=headers)
     resp.raise_for_status()
     data = resp.json()
     if not data.get("items"):
@@ -152,7 +146,7 @@ async def get_minecraft_profile(access_token: str) -> MinecraftProfileResponse:
     :return: The Minecraft profile
     """
     headers = {"Authorization": f"Bearer {access_token}"}
-    resp = req_setting.get("https://api.minecraftservices.com/minecraft/profile", headers=headers)
+    resp = requests.get("https://api.minecraftservices.com/minecraft/profile", headers=headers)
     resp.raise_for_status()
     return resp.json()
 
@@ -163,7 +157,7 @@ async def get_minecraft_player_attributes(access_token :str) -> MinecraftProfile
     :return: The Minecraft player attributes
     """
     headers = {"Authorization": f"Bearer {access_token}"}
-    resp = req_setting.get("https://api.minecraftservices.com/minecraft/profile/attributes", headers=headers)
+    resp = requests.get("https://api.minecraftservices.com/minecraft/profile/attributes", headers=headers)
     resp.raise_for_status()
     return resp.json()
 

@@ -9,7 +9,7 @@ from .types import MinecraftOptions, CallbackDict
 from typing import Literal, Any
 import subprocess
 import datetime
-from . import requests
+import requests
 import platform
 import hashlib
 import zipfile
