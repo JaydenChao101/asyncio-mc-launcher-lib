@@ -32,7 +32,8 @@ jobs:
         # 從 pyproject.toml 安裝專案及其依賴項
         uv pip install -e . --system
     
-    - name: Test with ruff      run: |
+    - name: Test with ruff
+      run: |
         # stop the build if there are Python syntax errors or undefined names
         ruff check . --exit-zero --ignore E501
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
