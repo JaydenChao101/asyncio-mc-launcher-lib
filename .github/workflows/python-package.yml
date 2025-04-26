@@ -29,8 +29,8 @@ jobs:
         
         python -m pip install --upgrade pip
         python -m pip install uv
-        uv pip install flake8 pytest
-        uv pip install requests
+        uv pip install flake8 pytest --system
+        uv pip install requests --system
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
