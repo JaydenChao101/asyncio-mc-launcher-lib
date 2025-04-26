@@ -163,9 +163,9 @@ def install_mrpack(
             # Remove the overrides at the start of the Name
             # We don't have removeprefix() in Python 3.8
             if zip_name.startswith("client-overrides/"):
-                file_name = zip_name[len("client-overrides/") :]
+                file_name = zip_name[len("client-overrides/"):]
             else:
-                file_name = zip_name[len("overrides/") :]
+                file_name = zip_name[len("overrides/"):]
 
             # Constructs the full Path
             full_path = os.path.abspath(os.path.join(modpack_directory, file_name))
