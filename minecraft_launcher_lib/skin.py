@@ -10,10 +10,10 @@ from ._types import skin, Credential
 from base64 import b64decode
 import json
 from typing import Optional
-from minecraft_launcher_lib import requests
+import requests
 
 
-async def get_skin_and_cape(Credential: Credential) -> Optional[skin, None]:
+async def get_skin_and_cape(Credential: Credential) -> Optional[skin]:
     """
     取得指定 UUID 的外觀與披風 URL。
 
