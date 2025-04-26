@@ -32,11 +32,12 @@ jobs:
         # 從 pyproject.toml 安裝專案及其依賴項
         uv pip install -e . --system
     
-    - name: Test with ruff      run: |
+    - name: Test with ruff
+      run: |
         # stop the build if there are Python syntax errors or undefined names
         ruff check . --exit-zero --ignore E501
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        ruff check . --exit-zero --max-complexity=10 --max-line-length=127
+        ruff check . --exit-zero -- --max-complexity=10 --max-line-length=127
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -44,9 +45,9 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    -name: Lint with pylint
+    - name: Lint with pylint
       run: |
         # stop the build if there are Python syntax errors or undefined names
-        pylint . --exit-zero --max-line-length=127
+        pylint minecraft_launcher_lib/ --exit-zero --max-line-length=127
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        pylint . --exit-zero --max-complexity=10 --max-line-length=127
+        pylint minecraft_launcher_lib/ --exit-zero --max-line-length=127
