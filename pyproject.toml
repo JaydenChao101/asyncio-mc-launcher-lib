@@ -35,6 +35,7 @@ classifiers = [
   "Typing :: Typed"
 ]
 dependencies = [
+  "pytest-subtests>=0.14.1",
   "requests",
   "requests-mock>=1.12.1",
   "ruff==0.11.7",
