@@ -13,9 +13,11 @@ import shutil
 import uuid
 import json
 import os
+import asyncio
+import aiofiles
 
 
-def get_minecraft_directory() -> str:
+async def get_minecraft_directory() -> str:
     """
     Returns the default path to the .minecraft directory
 
@@ -23,7 +25,7 @@ def get_minecraft_directory() -> str:
 
     .. code:: python
 
-        minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
+        minecraft_directory = await minecraft_launcher_lib.utils.get_minecraft_directory()
         print(f"The default minecraft directory is {minecraft_directory}")
     """
     if platform.system() == "Windows":
@@ -41,7 +43,7 @@ def get_minecraft_directory() -> str:
         return os.path.join(str(pathlib.Path.home()), ".minecraft")
 
 
-def get_latest_version() -> LatestMinecraftVersions:
+async def get_latest_version() -> LatestMinecraftVersions:
     """
     Returns the latest version of Minecraft
 
@@ -49,16 +51,17 @@ def get_latest_version() -> LatestMinecraftVersions:
 
     .. code:: python
 
-        latest_version = minecraft_launcher_lib.utils.get_latest_version()
+        latest_version = await minecraft_launcher_lib.utils.get_latest_version()
         print("Latest Release " + latest_version["release"])
         print("Latest Snapshot " + latest_version["snapshot"])
     """
-    return get_requests_response_cache(
+    response = await get_requests_response_cache(
         "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
-    ).json()["latest"]
+    )
+    return response.json()["latest"]
 
 
-def get_version_list() -> list[MinecraftVersionInfo]:
+async def get_version_list() -> list[MinecraftVersionInfo]:
     """
     Returns all versions that Mojang offers to download
 
@@ -66,12 +69,13 @@ def get_version_list() -> list[MinecraftVersionInfo]:
 
     .. code:: python
 
-        for version in minecraft_launcher_lib.utils.get_version_list():
+        async for version in minecraft_launcher_lib.utils.get_version_list():
             print(version["id"])
     """
-    vlist: VersionListManifestJson = get_requests_response_cache(
+    response = await get_requests_response_cache(
         "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
-    ).json()
+    )
+    vlist: VersionListManifestJson = response.json()
     returnlist: list[MinecraftVersionInfo] = []
     for i in vlist["versions"]:
         returnlist.append(
@@ -85,7 +89,7 @@ def get_version_list() -> list[MinecraftVersionInfo]:
     return returnlist
 
 
-def get_installed_versions(
+async def get_installed_versions(
     minecraft_directory: str | os.PathLike,
 ) -> list[MinecraftVersionInfo]:
     """
@@ -95,49 +99,51 @@ def get_installed_versions(
 
     .. code:: python
 
-        minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
-        for version in minecraft_launcher_lib.utils.get_installed_versions(minecraft_directory):
+        minecraft_directory = await minecraft_launcher_lib.utils.get_minecraft_directory()
+        versions = await minecraft_launcher_lib.utils.get_installed_versions(minecraft_directory)
+        for version in versions:
             print(version["id"])
 
     :param minecraft_directory: The path to your Minecraft directory
     """
     try:
-        dir_list = os.listdir(os.path.join(minecraft_directory, "versions"))
+        dir_list = await asyncio.to_thread(
+            os.listdir, os.path.join(minecraft_directory, "versions")
+        )
     except FileNotFoundError:
         return []
 
     version_list: list[MinecraftVersionInfo] = []
     for i in dir_list:
-        if not os.path.isfile(
-            os.path.join(minecraft_directory, "versions", i, i + ".json")
-        ):
+        json_path = os.path.join(minecraft_directory, "versions", i, i + ".json")
+        if not await asyncio.to_thread(os.path.isfile, json_path):
             continue
 
-        with open(
-            os.path.join(minecraft_directory, "versions", i, i + ".json"),
-            "r",
-            encoding="utf-8",
-        ) as f:
-            version_data: ClientJson = json.load(f)
-
         try:
-            release_time = datetime.fromisoformat(version_data["releaseTime"])
-        except ValueError:
-            # In case some custom client has a invalid time
-            release_time = datetime.fromtimestamp(0)
+            async with aiofiles.open(json_path, "r", encoding="utf-8") as f:
+                version_data: ClientJson = json.loads(await f.read())
 
-        version_list.append(
-            {
-                "id": version_data["id"],
-                "type": version_data["type"],
-                "releaseTime": release_time,
-                "complianceLevel": version_data.get("complianceLevel", 0),
-            }
-        )
+            try:
+                release_time = datetime.fromisoformat(version_data["releaseTime"])
+            except ValueError:
+                # In case some custom client has a invalid time
+                release_time = datetime.fromtimestamp(0)
+
+            version_list.append(
+                {
+                    "id": version_data["id"],
+                    "type": version_data["type"],
+                    "releaseTime": release_time,
+                    "complianceLevel": version_data.get("complianceLevel", 0),
+                }
+            )
+        except Exception:
+            continue
+
     return version_list
 
 
-def get_available_versions(
+async def get_available_versions(
     minecraft_directory: str | os.PathLike,
 ) -> list[MinecraftVersionInfo]:
     """
@@ -147,8 +153,9 @@ def get_available_versions(
 
     .. code:: python
 
-        minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
-        for version in minecraft_launcher_lib.utils.get_available_versions(minecraft_directory):
+        minecraft_directory = await minecraft_launcher_lib.utils.get_minecraft_directory()
+        versions = await minecraft_launcher_lib.utils.get_available_versions(minecraft_directory)
+        for version in versions:
             print(version["id"])
 
     :param minecraft_directory: The path to your Minecraft directory
@@ -156,18 +163,18 @@ def get_available_versions(
     version_list = []
     version_check = []
 
-    for i in get_version_list():
+    for i in await get_version_list():
         version_list.append(i)
         version_check.append(i["id"])
 
-    for i in get_installed_versions(minecraft_directory):
+    for i in await get_installed_versions(minecraft_directory):
         if i["id"] not in version_check:
             version_list.append(i)
 
     return version_list
 
 
-def get_java_executable() -> str:
+async def get_java_executable() -> str:
     """
     Tries the find out the path to the default java executable.
     Returns :code:`java`, if no path was found.
@@ -176,41 +183,42 @@ def get_java_executable() -> str:
 
     .. code:: python
 
-        print("The path to Java is " + minecraft_launcher_lib.utils.get_java_executable())
+        print("The path to Java is " + await minecraft_launcher_lib.utils.get_java_executable())
     """
     if platform.system() == "Windows":
         if (java_home := os.getenv("JAVA_HOME")) is not None:
             return os.path.join(java_home, "bin", "javaw.exe")
-        elif os.path.isfile(
-            r"C:\Program Files (x86)\Common Files\Oracle\Java\javapath\javaw.exe"
+        elif await asyncio.to_thread(
+            os.path.isfile,
+            r"C:\Program Files (x86)\Common Files\Oracle\Java\javapath\javaw.exe",
         ):
             return r"C:\Program Files (x86)\Common Files\Oracle\Java\javapath\javaw.exe"
         else:
-            return shutil.which("javaw") or "javaw"
+            return await asyncio.to_thread(shutil.which, "javaw") or "javaw"
     elif (java_home := os.getenv("JAVA_HOME")) is not None:
         return os.path.join(java_home, "bin", "java")
     elif platform.system() == "Darwin":
-        return shutil.which("java") or "java"
+        return await asyncio.to_thread(shutil.which, "java") or "java"
     else:
-        if os.path.islink("/etc/alternatives/java"):
-            return os.readlink("/etc/alternatives/java")
-        elif os.path.islink("/usr/lib/jvm/default-runtime"):
+        if await asyncio.to_thread(os.path.islink, "/etc/alternatives/java"):
+            return await asyncio.to_thread(os.readlink, "/etc/alternatives/java")
+        elif await asyncio.to_thread(os.path.islink, "/usr/lib/jvm/default-runtime"):
             return os.path.join(
                 "/usr",
                 "lib",
                 "jvm",
-                os.readlink("/usr/lib/jvm/default-runtime"),
+                await asyncio.to_thread(os.readlink, "/usr/lib/jvm/default-runtime"),
                 "bin",
                 "java",
             )
         else:
-            return shutil.which("java") or "java"
+            return await asyncio.to_thread(shutil.which, "java") or "java"
 
 
 _version_cache = None
 
 
-def get_library_version() -> str:
+async def get_library_version() -> str:
     """
     Returns the version of minecraft-launcher-lib
 
@@ -218,22 +226,19 @@ def get_library_version() -> str:
 
     .. code:: python
 
-        print(f"You are using version {minecraft_launcher_lib.utils.get_library_version()} of minecraft-launcher-lib")
+        print(f"You are using version {await minecraft_launcher_lib.utils.get_library_version()} of minecraft-launcher-lib")
     """
     global _version_cache
     if _version_cache is not None:
         return _version_cache
     else:
-        with open(
-            os.path.join(os.path.dirname(__file__), "version.txt"),
-            "r",
-            encoding="utf-8",
-        ) as f:
-            _version_cache = f.read().strip()
+        version_path = os.path.join(os.path.dirname(__file__), "version.txt")
+        async with aiofiles.open(version_path, "r", encoding="utf-8") as f:
+            _version_cache = (await f.read()).strip()
             return _version_cache
 
 
-def generate_test_options() -> MinecraftOptions:
+async def generate_test_options() -> MinecraftOptions:
     """
     Generates test options to launch minecraft.
     This includes a random name and a random uuid.
@@ -248,10 +253,10 @@ def generate_test_options() -> MinecraftOptions:
     .. code:: python
 
         version = "1.0"
-        options = minecraft_launcher_lib.utils.generate_test_options()
-        minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
-        command = minecraft_launcher_lib.command.get_minecraft_command(version, minecraft_directory, options)
-        subprocess.run(command)
+        options = await minecraft_launcher_lib.utils.generate_test_options()
+        minecraft_directory = await minecraft_launcher_lib.utils.get_minecraft_directory()
+        command = await minecraft_launcher_lib.command.get_minecraft_command(version, minecraft_directory, options)
+        await asyncio.create_subprocess_exec(*command)
     """
     return {
         "username": f"Player{random.randrange(100, 1000)}",
@@ -260,7 +265,9 @@ def generate_test_options() -> MinecraftOptions:
     }
 
 
-def is_version_valid(version: str, minecraft_directory: str | os.PathLike) -> bool:
+async def is_version_valid(
+    version: str, minecraft_directory: str | os.PathLike
+) -> bool:
     """
     Checks if the given version exists.
     This checks if the given version is installed or offered to download by Mojang.
@@ -271,8 +278,8 @@ def is_version_valid(version: str, minecraft_directory: str | os.PathLike) -> bo
     .. code:: python
 
         version = "1.0"
-        minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
-        if minecraft_launcher_lib.utils.is_version_valid(version, minecraft_directory):
+        minecraft_directory = await minecraft_launcher_lib.utils.get_minecraft_directory()
+        if await minecraft_launcher_lib.utils.is_version_valid(version, minecraft_directory):
             print(f"{version} is a valid version")
         else:
             print(f"{version} is not a valid version")
@@ -280,15 +287,17 @@ def is_version_valid(version: str, minecraft_directory: str | os.PathLike) -> bo
     :param version: A Minecraft version
     :param minecraft_directory: The path to your Minecraft directory
     """
-    if os.path.isdir(os.path.join(minecraft_directory, "versions", version)):
+    if await asyncio.to_thread(
+        os.path.isdir, os.path.join(minecraft_directory, "versions", version)
+    ):
         return True
-    for i in get_version_list():
+    for i in await get_version_list():
         if i["id"] == version:
             return True
     return False
 
 
-def is_vanilla_version(version: str) -> bool:
+async def is_vanilla_version(version: str) -> bool:
     """
     Checks if the given version is a vanilla version
 
@@ -297,20 +306,20 @@ def is_vanilla_version(version: str) -> bool:
     .. code:: python
 
         version = "1.0"
-        if minecraft_launcher_lib.utils.is_vanilla_version(version):
+        if await minecraft_launcher_lib.utils.is_vanilla_version(version):
             print(f"{version} is a vanilla version")
         else:
             print(f"{version} is not a vanilla version")
 
     :param version: A Minecraft version
     """
-    for i in get_version_list():
+    for i in await get_version_list():
         if i["id"] == version:
             return True
     return False
 
 
-def is_platform_supported() -> bool:
+async def is_platform_supported() -> bool:
     """
     Checks if the current platform is supported
 
@@ -318,7 +327,7 @@ def is_platform_supported() -> bool:
 
     .. code:: python
 
-        if not minecraft_launcher_lib.utils.is_platform_supported():
+        if not await minecraft_launcher_lib.utils.is_platform_supported():
             print("Your platform is not supported", file=sys.stderr)
             sys.exit(1)
     """
@@ -327,7 +336,7 @@ def is_platform_supported() -> bool:
     return True
 
 
-def is_minecraft_installed(minecraft_directory: str | os.PathLike) -> bool:
+async def is_minecraft_installed(minecraft_directory: str | os.PathLike) -> bool:
     """
     Checks, if there is already a existing Minecraft Installation in the given Directory
 
@@ -335,8 +344,8 @@ def is_minecraft_installed(minecraft_directory: str | os.PathLike) -> bool:
 
     .. code:: python
 
-        minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
-        if minecraft_launcher_lib.utils.is_minecraft_installed(minecraft_directory):
+        minecraft_directory = await minecraft_launcher_lib.utils.get_minecraft_directory()
+        if await minecraft_launcher_lib.utils.is_minecraft_installed(minecraft_directory):
             print("Minecraft is installed")
         else:
             print("Minecraft is not installed")
@@ -345,9 +354,17 @@ def is_minecraft_installed(minecraft_directory: str | os.PathLike) -> bool:
     :return: Is a Installation is found
     """
     try:
-        assert_func(os.path.isdir(os.path.join(minecraft_directory, "versions")))
-        assert_func(os.path.isdir(os.path.join(minecraft_directory, "libraries")))
-        assert_func(os.path.isdir(os.path.join(minecraft_directory, "assets")))
+        versions_path = os.path.join(minecraft_directory, "versions")
+        libraries_path = os.path.join(minecraft_directory, "libraries")
+        assets_path = os.path.join(minecraft_directory, "assets")
+
+        is_versions = await asyncio.to_thread(os.path.isdir, versions_path)
+        is_libraries = await asyncio.to_thread(os.path.isdir, libraries_path)
+        is_assets = await asyncio.to_thread(os.path.isdir, assets_path)
+
+        await asyncio.to_thread(assert_func, is_versions)
+        await asyncio.to_thread(assert_func, is_libraries)
+        await asyncio.to_thread(assert_func, is_assets)
         return True
     except AssertionError:
         return False

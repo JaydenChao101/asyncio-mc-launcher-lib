@@ -11,9 +11,15 @@ from minecraft_launcher_lib.microsoft_types import (
     MinecraftAuthenticateResponse,
     MinecraftProfileResponse,
 )
-from minecraft_launcher_lib.exceptions import AccountNotOwnMinecraft
+from minecraft_launcher_lib.exceptions import (
+    AccountNotOwnMinecraft,
+    AccountBanFromXbox,
+    AccountNeedAdultVerification,
+    AccountNotHaveXbox,
+    XboxLiveNotAvailable,
+)
 import urllib.parse
-import requests
+import aiohttp
 from minecraft_launcher_lib.logging_utils import logger  # 修改此行
 
 __AUTH_URL__ = "https://login.live.com/oauth20_authorize.srf"
@@ -73,11 +79,13 @@ async def get_ms_token(code: str) -> AuthorizationTokenResponse:
         "scope": __SCOPE__,
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    resp = requests.post(__TOKEN_URL__, data=data, headers=headers)
-    resp.raise_for_status()
-    data = resp.json()
-    logger.info(f"Microsoft token response: {data}")
-    return data
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(__TOKEN_URL__, data=data, headers=headers) as resp:
+            resp.raise_for_status()
+            data = await resp.json()
+            logger.info(f"Microsoft token response: {data}")
+            return data
 
 
 async def get_xbl_token(ms_access_token: str) -> XBLResponse:
@@ -91,15 +99,17 @@ async def get_xbl_token(ms_access_token: str) -> XBLResponse:
         "TokenType": "JWT",
     }
     headers = {"Content-Type": "application/json"}
-    resp = requests.post(
-        "https://user.auth.xboxlive.com/user/authenticate",
-        json=payload,
-        headers=headers,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    logger.info(f"Xbox Token response: {data}")
-    return data
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            "https://user.auth.xboxlive.com/user/authenticate",
+            json=payload,
+            headers=headers,
+        ) as resp:
+            resp.raise_for_status()
+            data = await resp.json()
+            logger.info(f"Xbox Token response: {data}")
+            return data
 
 
 async def get_xsts_token(xbl_token: str) -> XSTSResponse:
@@ -115,13 +125,55 @@ async def get_xsts_token(xbl_token: str) -> XSTSResponse:
         "TokenType": "JWT",
     }
     headers = {"Content-Type": "application/json"}
-    resp = requests.post(
-        "https://xsts.auth.xboxlive.com/xsts/authorize", json=payload, headers=headers
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    logger.info(f"XSTS Token response: {data}")
-    return data
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            "https://xsts.auth.xboxlive.com/xsts/authorize",
+            json=payload,
+            headers=headers,
+        ) as resp:
+            status = resp.status
+            data = await resp.json()
+
+            if status == 401:
+                error_code = data.get("XErr")
+                """
+                The Redirect parameter usually will not resolve or go anywhere in a browser, likely they're targeting Xbox consoles.
+
+                Noted XErr codes and their meanings:
+
+                2148916227: The account is banned from Xbox.
+                2148916233: The account doesn't have an Xbox account. Once they sign up for one (or login through minecraft.net to create one) then they can proceed with the login. This shouldn't happen with accounts that have purchased Minecraft with a Microsoft account, as they would've already gone through that Xbox signup process.
+                2148916235: The account is from a country where Xbox Live is not available/banned
+                2148916236: The account needs adult verification on Xbox page. (South Korea)
+                2148916237: The account needs adult verification on Xbox page. (South Korea)
+                2148916238: The account is a child (under 18) and cannot proceed unless the account is added to a Family by an adult. This only seems to occur when using a custom Microsoft Azure application. When using the Minecraft launchers client id, this doesn't trigger.
+                """
+                error_codes = {
+                    "ban_from_Xbox": 2148916227,
+                    "didnt_have_xbox": 2148916233,
+                    "ban_contry": 2148916235,
+                    "need_adult_verification": 2148916236,
+                    "need_adult_verification_1": 2148916237,
+                }
+
+                # raise Error
+                if error_code == error_codes["ban_from_Xbox"]:
+                    raise AccountBanFromXbox()
+                elif error_code == error_codes["didnt_have_xbox"]:
+                    raise AccountNotHaveXbox()
+                elif error_code == error_codes["ban_contry"]:
+                    raise XboxLiveNotAvailable()
+                elif (
+                    error_code == error_codes["need_adult_verification"]
+                    or error_code == error_codes["need_adult_verification_1"]
+                ):
+                    raise AccountNeedAdultVerification()
+                else:
+                    raise Exception(f"Loginning of the XSTS token error: {error_code}")
+
+            logger.info(f"XSTS Token response: {data}")
+            return data
 
 
 async def get_minecraft_access_token(
@@ -137,15 +189,17 @@ async def get_minecraft_access_token(
     identity_token = f"XBL3.0 x={uhs};{xsts_token}"
     payload = {"identityToken": identity_token}
     headers = {"Content-Type": "application/json"}
-    resp = requests.post(
-        "https://api.minecraftservices.com/authentication/login_with_xbox",
-        json=payload,
-        headers=headers,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    logger.info(f"Minecraft access token response: {data}")
-    return data
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            "https://api.minecraftservices.com/authentication/login_with_xbox",
+            json=payload,
+            headers=headers,
+        ) as resp:
+            resp.raise_for_status()
+            data = await resp.json()
+            logger.info(f"Minecraft access token response: {data}")
+            return data
 
 
 async def have_minecraft(access_token: str) -> bool:
@@ -156,14 +210,16 @@ async def have_minecraft(access_token: str) -> bool:
     :return: True if the user owns Minecraft, Raise AccountNotOwnMinecraft otherwise
     """
     headers = {"Authorization": f"Bearer {access_token}"}
-    resp = requests.get(
-        "https://api.minecraftservices.com/entitlements/mcstore", headers=headers
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    if not data.get("items"):
-        raise AccountNotOwnMinecraft()
-    return True
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            "https://api.minecraftservices.com/entitlements/mcstore", headers=headers
+        ) as resp:
+            resp.raise_for_status()
+            data = await resp.json()
+            if not data.get("items"):
+                raise AccountNotOwnMinecraft()
+            return True
 
 
 async def get_minecraft_profile(access_token: str) -> MinecraftProfileResponse:
@@ -174,11 +230,13 @@ async def get_minecraft_profile(access_token: str) -> MinecraftProfileResponse:
     :return: The Minecraft profile
     """
     headers = {"Authorization": f"Bearer {access_token}"}
-    resp = requests.get(
-        "https://api.minecraftservices.com/minecraft/profile", headers=headers
-    )
-    resp.raise_for_status()
-    return resp.json()
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            "https://api.minecraftservices.com/minecraft/profile", headers=headers
+        ) as resp:
+            resp.raise_for_status()
+            return await resp.json()
 
 
 async def get_minecraft_player_attributes(
@@ -190,12 +248,14 @@ async def get_minecraft_player_attributes(
     :return: The Minecraft player attributes
     """
     headers = {"Authorization": f"Bearer {access_token}"}
-    resp = requests.get(
-        "https://api.minecraftservices.com/minecraft/profile/attributes",
-        headers=headers,
-    )
-    resp.raise_for_status()
-    return resp.json()
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            "https://api.minecraftservices.com/minecraft/profile/attributes",
+            headers=headers,
+        ) as resp:
+            resp.raise_for_status()
+            return await resp.json()
 
 
 # This example shows how to login to a Microsoft account and get the access token.

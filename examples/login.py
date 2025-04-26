@@ -36,7 +36,7 @@ def get_ms_token(code: str) -> str:
     resp.raise_for_status()
     return resp.json()["access_token"]
 
-def get_xbl_token(ms_access_token: str) -> (str, str):
+def get_xbl_token(ms_access_token: str) -> tuple[str, str]:
     """Exchange Microsoft token for an Xbox Live token + user hash (uhs)."""
     payload = {
         "Properties": {

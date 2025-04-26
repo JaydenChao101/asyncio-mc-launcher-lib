@@ -6,6 +6,7 @@ from ._internal_types.shared_types import ClientJson, ClientJsonLibrary
 from ._helper import parse_rule_list, inherit_json, get_library_path
 from .exceptions import VersionNotFound
 from typing import Literal
+import aiofiles
 import platform
 import zipfile
 import json
@@ -43,7 +44,7 @@ def get_natives(data: ClientJsonLibrary) -> str:
         return ""
 
 
-def extract_natives_file(
+async def extract_natives_file(
     filename: str, extract_path: str, extract_data: dict[Literal["exclude"], list[str]]
 ) -> None:
     """
@@ -63,7 +64,9 @@ def extract_natives_file(
                 zf.extract(i, extract_path)
 
 
-def extract_natives(versionid: str, path: str | os.PathLike, extract_path: str) -> None:
+async def extract_natives(
+    versionid: str, path: str | os.PathLike, extract_path: str
+) -> None:
     """
     Extract all native libraries from a version into the given directory. The directory will be created, if it does not exist.
 
@@ -80,15 +83,15 @@ def extract_natives(versionid: str, path: str | os.PathLike, extract_path: str) 
     ):
         raise VersionNotFound(versionid)
 
-    with open(
+    async with aiofiles.open(
         os.path.join(path, "versions", versionid, versionid + ".json"),
         "r",
         encoding="utf-8",
     ) as f:
-        data: ClientJson = json.load(f)
+        data: ClientJson = json.loads(await f.read())
 
     if "inheritsFrom" in data:
-        data = inherit_json(data, path)
+        data = await inherit_json(data, path)
 
     for i in data["libraries"]:
         # Check, if the rules allow this lib for the current system
@@ -102,7 +105,7 @@ def extract_natives(versionid: str, path: str | os.PathLike, extract_path: str) 
             continue
 
         lib_path, extension = os.path.splitext(current_path)
-        extract_natives_file(
+        await extract_natives_file(
             f"{lib_path}-{native}{extension}",
             extract_path,
             i.get("extract", {"exclude": []}),
