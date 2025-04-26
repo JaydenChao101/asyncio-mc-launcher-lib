@@ -23,7 +23,7 @@ def assert_func(expression: bool) -> None:
         raise AssertionError()
 
 
-def get_test_callbacks() -> minecraft_launcher_lib.types.CallbackDict:
+def get_test_callbacks() -> minecraft_launcher_lib._types.CallbackDict:
     return {
         "setStatus": lambda value: assert_func(isinstance(value, str)),
         "setProgress": lambda value: assert_func(isinstance(value, int)),

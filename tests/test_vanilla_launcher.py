@@ -89,7 +89,7 @@ def _remove_none_values(none_dict: dict) -> dict:
     return new_dict
 
 
-def _check_vanilla_profile_written(tmp_path: pathlib.Path, profile: minecraft_launcher_lib.types.VanillaLauncherProfile) -> None:
+def _check_vanilla_profile_written(tmp_path: pathlib.Path, profile: minecraft_launcher_lib._types.VanillaLauncherProfile) -> None:
     temp_dir_count = 0
     while True:
         if not (tmp_path / str(temp_dir_count)).is_dir():
