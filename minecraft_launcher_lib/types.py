@@ -8,7 +8,7 @@ For more information about TypedDict see `PEP 589 <https://peps.python.org/pep-0
 """
 from typing import Literal, TypedDict, Callable
 import datetime
-from uuid import UUID
+from uuid import uuid4
 
 
 class MinecraftOptions(TypedDict, total=False):
@@ -195,4 +195,8 @@ class JavaPatchNotes(TypedDict):
 class Credential(TypedDict):
     access_token: str
     username: str
-    uuid: UUID
+    uuid: uuid4
+
+class skin(TypedDict):
+    skin:str
+    cape:str
