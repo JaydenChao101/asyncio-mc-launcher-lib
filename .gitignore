@@ -176,3 +176,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+.vscode/
+.woorkspace/
+.woodpecker/
+test/
+uv.lock

@@ -14,7 +14,7 @@ from minecraft_launcher_lib.microsoft_types import (
 from minecraft_launcher_lib.exceptions import AccountNotOwnMinecraft
 import urllib.parse
 import requests
-from minecraft_launcher_lib import logger
+from minecraft_launcher_lib.logging_utils import logger  # 修改此行
 
 __AUTH_URL__ = "https://login.live.com/oauth20_authorize.srf"
 __TOKEN_URL__ = "https://login.live.com/oauth20_token.srf"
