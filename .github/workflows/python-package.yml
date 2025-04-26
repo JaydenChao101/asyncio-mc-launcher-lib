@@ -31,6 +31,7 @@ jobs:
         uv pip install flake8 pylint --system
         # 從 pyproject.toml 安裝專案及其依賴項
         uv pip install -e . --system
+        uv pip install ruff flake8 pylint --system
     
     - name: Test with ruff
       run: |

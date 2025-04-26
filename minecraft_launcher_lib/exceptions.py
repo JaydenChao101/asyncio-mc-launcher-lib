@@ -158,3 +158,39 @@ class AccountNotOwnMinecraft(Exception):
 
     def __init__(self) -> None:
         super().__init__("This Account does not own Minecraft")
+
+
+class AccountBanFromXbox(Exception):
+    """
+    Raised when the Account is banned from Xbox
+    """
+
+    def __init__(self) -> None:
+        super().__init__("This Account is banned from Xbox")
+
+
+class AccountNotHaveXbox(Exception):
+    """
+    Raised when the Account does not have Xbox
+    """
+
+    def __init__(self) -> None:
+        super().__init__("This Account does not have Xbox")
+
+
+class XboxLiveNotAvailable(Exception):
+    """
+    Raised when the Xbox Live Service is not available
+    """
+
+    def __init__(self) -> None:
+        super().__init__("Xbox Live Service is not available")
+
+
+class AccountNeedAdultVerification(Exception):
+    """
+    Raised when the Account needs adult verification
+    """
+
+    def __init__(self) -> None:
+        super().__init__("This Account needs adult verification")

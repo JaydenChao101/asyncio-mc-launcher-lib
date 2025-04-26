@@ -10,15 +10,17 @@ news includes functions to retrieve news about Minecraft using the official API 
 from ._types import MinecraftNews, JavaPatchNotes
 from ._helper import get_user_agent
 import datetime
-import requests
+import aiohttp
 
 
-def get_minecraft_news() -> MinecraftNews:
+async def get_minecraft_news() -> MinecraftNews:
     "Returns general news about Minecraft"
-    news = requests.get(
-        "https://launchercontent.mojang.com/news.json",
-        headers={"user-agent": get_user_agent()},
-    ).json()
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            "https://launchercontent.mojang.com/news.json",
+            headers={"user-agent": get_user_agent()},
+        ) as response:
+            news = await response.json()
 
     for entry in news["entries"]:
         entry["date"] = datetime.date.fromisoformat(entry["date"])
@@ -26,9 +28,11 @@ def get_minecraft_news() -> MinecraftNews:
     return news
 
 
-def get_java_patch_notes() -> JavaPatchNotes:
+async def get_java_patch_notes() -> JavaPatchNotes:
     "Returns the patch notes for Minecraft Java Edition"
-    return requests.get(
-        "https://launchercontent.mojang.com/javaPatchNotes.json",
-        headers={"user-agent": get_user_agent()},
-    ).json()
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            "https://launchercontent.mojang.com/javaPatchNotes.json",
+            headers={"user-agent": get_user_agent()},
+        ) as response:
+            return await response.json()

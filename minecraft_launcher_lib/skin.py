@@ -10,7 +10,8 @@ from ._types import skin, Credential
 from base64 import b64decode
 import json
 from typing import Optional
-import requests
+import aiohttp
+import aiofiles
 
 
 async def get_skin_and_cape(Credential: Credential) -> Optional[skin]:
@@ -18,14 +19,15 @@ async def get_skin_and_cape(Credential: Credential) -> Optional[skin]:
     取得指定 UUID 的外觀與披風 URL。
 
     :param Credential: 玩家凭证，需包含 uuid
-    :return: dict，包含 skin 和 cape（如无披风则 cape 为 None）
+    :return: dict，包含 skin 和 cape（如无披風则 cape 为 None）
     """
     uuid = Credential["uuid"]
     url = f"https://sessionserver.mojang.com/session/minecraft/profile/{uuid}"
-    response = requests.get(url)
-    if response.status_code != 200:
-        return None
-    data = response.json()
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                return None
+            data = await response.json()
     properties = data.get("properties", [])
     for prop in properties:
         if prop.get("name") == "textures":
@@ -59,8 +61,9 @@ async def change_skin(
     url = f"https://api.mojang.com/user/profile/{uuid}/skin"
     headers = {"Authorization": f"Bearer {access_token}"}
     data = {"model": model, "url": skin_url}
-    response = requests.post(url, headers=headers, data=data)
-    return response.status_code == 204
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, data=data) as response:
+            return response.status == 204
 
 
 async def upload_skin(Credential: Credential, file_path: str, model: str = "") -> bool:
@@ -76,11 +79,17 @@ async def upload_skin(Credential: Credential, file_path: str, model: str = "") -
     access_token = Credential["access_token"]
     url = f"https://api.mojang.com/user/profile/{uuid}/skin"
     headers = {"Authorization": f"Bearer {access_token}"}
-    files = {"file": open(file_path, "rb")}
-    data = {"model": model}
-    response = requests.put(url, headers=headers, files=files, data=data)
-    files["file"].close()
-    return response.status_code == 204
+
+    async with aiofiles.open(file_path, "rb") as f:
+        file_data = await f.read()
+
+    form = aiohttp.FormData()
+    form.add_field("file", file_data, filename=file_path.split("/")[-1])
+    form.add_field("model", model)
+
+    async with aiohttp.ClientSession() as session:
+        async with session.put(url, headers=headers, data=form) as response:
+            return response.status == 204
 
 
 async def reset_skin(Credential: Credential) -> bool:
@@ -94,5 +103,6 @@ async def reset_skin(Credential: Credential) -> bool:
     access_token = Credential["access_token"]
     url = f"https://api.mojang.com/user/profile/{uuid}/skin"
     headers = {"Authorization": f"Bearer {access_token}"}
-    response = requests.delete(url, headers=headers)
-    return response.status_code == 204
+    async with aiohttp.ClientSession() as session:
+        async with session.delete(url, headers=headers) as response:
+            return response.status == 204

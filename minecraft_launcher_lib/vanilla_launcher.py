@@ -11,6 +11,7 @@ from .exceptions import InvalidVanillaLauncherProfile
 from .utils import get_latest_version
 from ._helper import assert_func
 import datetime
+import aiofiles
 import json
 import uuid
 import os
@@ -24,7 +25,9 @@ __all__ = [
 ]
 
 
-def _is_vanilla_launcher_profile_valid(vanilla_profile: VanillaLauncherProfile) -> bool:
+async def _is_vanilla_launcher_profile_valid(
+    vanilla_profile: VanillaLauncherProfile,
+) -> bool:
     "Checks if the given profile is valid"
     if not isinstance(vanilla_profile.get("name"), str):
         return False
@@ -70,7 +73,7 @@ def _is_vanilla_launcher_profile_valid(vanilla_profile: VanillaLauncherProfile) 
     return True
 
 
-def load_vanilla_launcher_profiles(
+async def load_vanilla_launcher_profiles(
     minecraft_directory: str | os.PathLike,
 ) -> list[VanillaLauncherProfile]:
     """
@@ -79,12 +82,13 @@ def load_vanilla_launcher_profiles(
     :param minecraft_directory: The Minecraft directory
     :return: A List with the Profiles
     """
-    with open(
+    async with aiofiles.open(
         os.path.join(minecraft_directory, "launcher_profiles.json"),
         "r",
         encoding="utf-8",
     ) as f:
-        data: VanillaLauncherProfilesJson = json.load(f)
+        data_text = await f.read()
+        data: VanillaLauncherProfilesJson = json.loads(data_text)
 
     profile_list: list[VanillaLauncherProfile] = []
     for value in data["profiles"].values():
@@ -130,7 +134,7 @@ def load_vanilla_launcher_profiles(
     return profile_list
 
 
-def vanilla_launcher_profile_to_minecraft_options(
+async def vanilla_launcher_profile_to_minecraft_options(
     vanilla_profile: VanillaLauncherProfile,
 ) -> MinecraftOptions:
     """
@@ -141,7 +145,7 @@ def vanilla_launcher_profile_to_minecraft_options(
     :raises InvalidVanillaLauncherProfile: The given Profile is invalid
     :return: The Options Dict
     """
-    if not _is_vanilla_launcher_profile_valid(vanilla_profile):
+    if not await _is_vanilla_launcher_profile_valid(vanilla_profile):
         raise InvalidVanillaLauncherProfile(vanilla_profile)
 
     options: MinecraftOptions = {}
@@ -163,7 +167,7 @@ def vanilla_launcher_profile_to_minecraft_options(
     return options
 
 
-def get_vanilla_launcher_profile_version(
+async def get_vanilla_launcher_profile_version(
     vanilla_profile: VanillaLauncherProfile,
 ) -> str:
     """
@@ -174,7 +178,7 @@ def get_vanilla_launcher_profile_version(
     :raises InvalidVanillaLauncherProfile: The given Profile is invalid
     :return: The Minecraft version
     """
-    if not _is_vanilla_launcher_profile_valid(vanilla_profile):
+    if not await _is_vanilla_launcher_profile_valid(vanilla_profile):
         raise InvalidVanillaLauncherProfile(vanilla_profile)
 
     if vanilla_profile["versionType"] == "latest-release":
@@ -185,7 +189,7 @@ def get_vanilla_launcher_profile_version(
         return vanilla_profile["version"]  # type: ignore
 
 
-def add_vanilla_launcher_profile(
+async def add_vanilla_launcher_profile(
     minecraft_directory: str | os.PathLike, vanilla_profile: VanillaLauncherProfile
 ) -> None:
     """
@@ -195,15 +199,16 @@ def add_vanilla_launcher_profile(
     :param vanilla_profile: The new Profile
     :raises InvalidVanillaLauncherProfile: The given Profile is invalid
     """
-    if not _is_vanilla_launcher_profile_valid(vanilla_profile):
+    if not await _is_vanilla_launcher_profile_valid(vanilla_profile):
         raise InvalidVanillaLauncherProfile(vanilla_profile)
 
-    with open(
+    async with aiofiles.open(
         os.path.join(minecraft_directory, "launcher_profiles.json"),
         "r",
         encoding="utf-8",
     ) as f:
-        data: VanillaLauncherProfilesJson = json.load(f)
+        data_text = await f.read()
+        data: VanillaLauncherProfilesJson = json.loads(data_text)
 
     new_profile: VanillaLauncherProfilesJsonProfile = {}
     new_profile["name"] = vanilla_profile["name"]
@@ -243,15 +248,17 @@ def add_vanilla_launcher_profile(
 
     data["profiles"][key] = new_profile
 
-    with open(
+    async with aiofiles.open(
         os.path.join(minecraft_directory, "launcher_profiles.json"),
         "w",
         encoding="utf-8",
     ) as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+        await f.write(json.dumps(data, ensure_ascii=False, indent=4))
 
 
-def do_vanilla_launcher_profiles_exists(minecraft_directory: str | os.PathLike) -> bool:
+async def do_vanilla_launcher_profiles_exists(
+    minecraft_directory: str | os.PathLike,
+) -> bool:
     """
     Checks if profiles from the vanilla launcher can be found
 

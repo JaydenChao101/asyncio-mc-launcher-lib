@@ -35,10 +35,9 @@ classifiers = [
   "Typing :: Typed"
 ]
 dependencies = [
-  "pytest-subtests>=0.14.1",
-  "requests",
+  "aiofiles>=24.1.0",
+  "aiohttp>=3.11.18",
   "requests-mock>=1.12.1",
-  "ruff==0.11.7",
 ]
 dynamic = ["version"]
 

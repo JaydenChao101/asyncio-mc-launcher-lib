@@ -1,16 +1,14 @@
-# This file is part of minecraft-launcher-lib (https://codeberg.org/JakobDev/minecraft-launcher-lib)
-# SPDX-FileCopyrightText: Copyright (c) 2019-2025 JakobDev <jakobdev@gmx.de> and contributors
-# SPDX-License-Identifier: BSD-2-Clause
 "java_utils contains some functions to help with Java"
+
 from ._helper import SUBPROCESS_STARTUP_INFO
 from ._types import JavaInformation
-import subprocess
+import asyncio
 import platform
 import re
 import os
 
 
-def get_java_information(path: str | os.PathLike) -> JavaInformation:
+async def get_java_information(path: str | os.PathLike) -> JavaInformation:
     """
     Returns Some Information about the given Java Installation
 
@@ -22,7 +20,7 @@ def get_java_information(path: str | os.PathLike) -> JavaInformation:
     .. code:: python
 
         java_path = "<path>"
-        information = minecraft_launcher_lib.java_utils.get_java_information(java_path)
+        information = await minecraft_launcher_lib.java_utils.get_java_information(java_path)
         print("Name: " + information["name"])
         print("Version: " + information["version"])
         print("Java path: " + information["java_path"])
@@ -43,12 +41,17 @@ def get_java_information(path: str | os.PathLike) -> JavaInformation:
                 os.path.abspath(os.path.join(path, "bin", "java")) + " was not found"
             )
 
-    lines = subprocess.run(
-        [os.path.join(path, "bin", "java"), "-showversion"],
-        capture_output=True,
-        text=True,
+    process = await asyncio.create_subprocess_exec(
+        os.path.join(path, "bin", "java"),
+        "-showversion",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
         startupinfo=SUBPROCESS_STARTUP_INFO,
-    ).stderr.splitlines()
+    )
+
+    _, stderr = await process.communicate()
+    lines = stderr.decode("utf-8").splitlines()
+
     information: JavaInformation = {}  # type: ignore
     information["path"] = str(path)
     information["name"] = os.path.basename(path)
@@ -90,7 +93,7 @@ def _search_java_directory(path: str | os.PathLike) -> list[str]:
     return java_list
 
 
-def find_system_java_versions(
+async def find_system_java_versions(
     additional_directories: list[str | os.PathLike] | None = None,
 ) -> list[str]:
     """
@@ -101,7 +104,7 @@ def find_system_java_versions(
 
     .. code:: python
 
-        for version in minecraft_launcher_lib.java_utils.find_system_java_versions():
+        for version in await minecraft_launcher_lib.java_utils.find_system_java_versions():
             print(version)
 
     :param additional_directories: A List of additional Directories to search for Java in custom locations
@@ -124,7 +127,7 @@ def find_system_java_versions(
     return java_list
 
 
-def find_system_java_versions_information(
+async def find_system_java_versions_information(
     additional_directories: list[str | os.PathLike] | None = None,
 ) -> list[JavaInformation]:
     """
@@ -138,7 +141,7 @@ def find_system_java_versions_information(
 
     .. code:: python
 
-        for version_information in minecraft_launcher_lib.java_utils.find_system_java_versions_information():
+        for version_information in await minecraft_launcher_lib.java_utils.find_system_java_versions_information():
             print("Path: " + version_information["path"])
             print("Name: " + version_information["name"])
             print("Version: " + version_information["version"])
@@ -149,6 +152,11 @@ def find_system_java_versions_information(
     :return: A List with Information of Java Installations
     """
     java_information_list: list[JavaInformation] = []
-    for i in find_system_java_versions(additional_directories=additional_directories):
-        java_information_list.append(get_java_information(i))
+    java_versions = await find_system_java_versions(
+        additional_directories=additional_directories
+    )
+
+    for i in java_versions:
+        java_information_list.append(await get_java_information(i))
+
     return java_information_list

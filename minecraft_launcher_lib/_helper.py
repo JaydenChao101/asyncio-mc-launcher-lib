@@ -9,11 +9,11 @@ from ._types import MinecraftOptions, CallbackDict
 from typing import Literal, Any
 import subprocess
 import datetime
-import requests
+import aiohttp
+import aiofiles
 import platform
 import hashlib
 import zipfile
-import shutil
 import lzma
 import json
 import sys
@@ -48,13 +48,13 @@ def check_path_inside_minecraft_directory(
         )
 
 
-def download_file(
+async def download_file(
     url: str,
     path: str,
     callback: CallbackDict = {},
     sha1: str | None = None,
     lzma_compressed: bool | None = False,
-    session: requests.sessions.Session | None = None,
+    session: aiohttp.ClientSession | None = None,
     minecraft_directory: str | os.PathLike | None = None,
     overwrite: bool | None = False,
 ) -> bool:
@@ -68,33 +68,40 @@ def download_file(
     if os.path.isfile(path) and not overwrite:
         if sha1 is None:
             return False
-        elif get_sha1_hash(path) == sha1:
+        elif await get_sha1_hash(path) == sha1:
             return False
 
     try:
-        os.makedirs(os.path.dirname(path))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
     except Exception:
         pass
 
     callback.get("setStatus", empty)("Download " + os.path.basename(path))
 
+    close_session = False
     if session is None:
-        r = requests.get(url, stream=True, headers={"user-agent": get_user_agent()})
-    else:
-        r = session.get(url, stream=True, headers={"user-agent": get_user_agent()})
+        session = aiohttp.ClientSession()
+        close_session = True
 
-    if r.status_code != 200:
-        return False
+    try:
+        headers = {"user-agent": get_user_agent()}
+        async with session.get(url, headers=headers) as r:
+            if r.status != 200:
+                return False
 
-    with open(path, "wb") as f:
-        r.raw.decode_content = True
-        if lzma_compressed:
-            f.write(lzma.decompress(r.content))
-        else:
-            shutil.copyfileobj(r.raw, f)
+            content = await r.read()
+
+            async with aiofiles.open(path, "wb") as f:
+                if lzma_compressed:
+                    await f.write(lzma.decompress(content))
+                else:
+                    await f.write(content)
+    finally:
+        if close_session:
+            await session.close()
 
     if sha1 is not None:
-        checksum = get_sha1_hash(path)
+        checksum = await get_sha1_hash(path)
         if checksum != sha1:
             raise InvalidChecksum(url, path, sha1, checksum)
 
@@ -175,17 +182,20 @@ def _get_lib_name_without_version(lib: ClientJsonLibrary) -> str:
     return ":".join(lib["name"].split(":")[:-1])
 
 
-def inherit_json(original_data: ClientJson, path: str | os.PathLike) -> ClientJson:
+async def inherit_json(
+    original_data: ClientJson, path: str | os.PathLike
+) -> ClientJson:
     """
     Implement the inheritsFrom function
     See https://github.com/tomsik68/mclauncher-api/wiki/Version-Inheritance-&-Forge
     """
     inherit_version = original_data["inheritsFrom"]
 
-    with open(
-        os.path.join(path, "versions", inherit_version, inherit_version + ".json")
-    ) as f:
-        new_data: ClientJson = json.load(f)
+    file_path = os.path.join(
+        path, "versions", inherit_version, inherit_version + ".json"
+    )
+    async with aiofiles.open(file_path, "r") as f:
+        new_data: ClientJson = json.loads(await f.read())
 
     # Inheriting the libs is a bit special
     # If the lib is already present in the client.json in a different, it can't be inherited
@@ -243,7 +253,7 @@ def get_library_path(name: str, path: str | os.PathLike) -> str:
     return libpath
 
 
-def get_jar_mainclass(path: str) -> str:
+async def get_jar_mainclass(path: str) -> str:
     """
     Returns the mainclass of a given jar
     """
@@ -262,16 +272,16 @@ def get_jar_mainclass(path: str) -> str:
     return content["Main-Class"]
 
 
-def get_sha1_hash(path: str) -> str:
+async def get_sha1_hash(path: str) -> str:
     """
     Calculate the sha1 checksum of a file
     Source: https://stackoverflow.com/questions/22058048/hashing-a-file-in-python
     """
     BUF_SIZE = 65536
     sha1 = hashlib.sha1()
-    with open(path, "rb") as f:
+    async with aiofiles.open(path, "rb") as f:
         while True:
-            data = f.read(BUF_SIZE)
+            data = await f.read(BUF_SIZE)
             if not data:
                 break
             sha1.update(data)
@@ -295,7 +305,7 @@ def get_os_version() -> str:
 _user_agent_cache = None
 
 
-def get_user_agent() -> str:
+async def get_user_agent() -> str:
     """
     Returns the user agent of minecraft-launcher-lib
     """
@@ -303,12 +313,9 @@ def get_user_agent() -> str:
     if _user_agent_cache is not None:
         return _user_agent_cache
     else:
-        with open(
-            os.path.join(os.path.dirname(__file__), "version.txt"),
-            "r",
-            encoding="utf-8",
-        ) as f:
-            _user_agent_cache = "minecraft-launcher-lib/" + f.read().strip()
+        file_path = os.path.join(os.path.dirname(__file__), "version.txt")
+        async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
+            _user_agent_cache = "minecraft-launcher-lib/" + (await f.read()).strip()
             return _user_agent_cache
 
 
@@ -325,45 +332,71 @@ def get_classpath_separator() -> Literal[":", ";"]:
 _requests_response_cache: dict[str, RequestsResponseCache] = {}
 
 
-def get_requests_response_cache(url: str) -> requests.models.Response:
+async def get_requests_response_cache(url: str) -> aiohttp.ClientResponse:
     """
     Caches the result of request.get(). If a request was made to the same URL within the last hour, the cache will be used, so you don't need to make a request to a URl each timje you call a function.
     """
+    now = datetime.datetime.now()
 
     if (
         url not in _requests_response_cache
-        or (
-            datetime.datetime.now() - _requests_response_cache[url]["datetime"]
-        ).total_seconds()
-        / 60
-        / 60
+        or (now - _requests_response_cache[url]["datetime"]).total_seconds() / 60 / 60
         >= 1
     ):
-        r = requests.get(url, headers={"user-agent": get_user_agent()})
-        if r.status_code == 200:
-            _requests_response_cache[url] = {
-                "response": r,
-                "datetime": datetime.datetime.now(),
-            }
-        return r
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                url, headers={"user-agent": await get_user_agent()}
+            ) as r:
+                if r.status == 200:
+                    # 將響應體複製出來避免連接關閉後無法訪問
+                    content = await r.read()
+                    text = await r.text()
+                    json_data = (
+                        await r.json()
+                        if "application/json" in r.headers.get("Content-Type", "")
+                        else None
+                    )
+
+                    # 創建一個模擬的 response 物件來存儲在緩存中
+                    response_cache = {
+                        "status": r.status,
+                        "content": content,
+                        "text": text,
+                        "json_data": json_data,
+                        "headers": dict(r.headers),
+                    }
+
+                    _requests_response_cache[url] = {
+                        "response": response_cache,
+                        "datetime": now,
+                    }
+                    return response_cache
+                return {
+                    "status": r.status,
+                    "content": await r.read(),
+                    "text": await r.text(),
+                    "json_data": None,
+                    "headers": dict(r.headers),
+                }
     else:
         return _requests_response_cache[url]["response"]
 
 
-def parse_maven_metadata(url: str) -> MavenMetadata:
+async def parse_maven_metadata(url: str) -> MavenMetadata:
     """
     Parses a maven metadata file
     """
-    r = get_requests_response_cache(url)
+    r = await get_requests_response_cache(url)
     # The structure of the metadata file is simple. So you don't need a XML parser. It can be parsed using RegEx.
+    text = r["text"]
     return {
-        "release": re.search("(?<=<release>).*?(?=</release>)", r.text, re.MULTILINE).group(),  # type: ignore
-        "latest": re.search("(?<=<latest>).*?(?=</latest>)", r.text, re.MULTILINE).group(),  # type: ignore
-        "versions": re.findall("(?<=<version>).*?(?=</version>)", r.text, re.MULTILINE),
+        "release": re.search("(?<=<release>).*?(?=</release>)", text, re.MULTILINE).group(),  # type: ignore
+        "latest": re.search("(?<=<latest>).*?(?=</latest>)", text, re.MULTILINE).group(),  # type: ignore
+        "versions": re.findall("(?<=<version>).*?(?=</version>)", text, re.MULTILINE),
     }
 
 
-def extract_file_from_zip(
+async def extract_file_from_zip(
     handler: zipfile.ZipFile,
     zip_path: str,
     extract_path: str,
@@ -376,13 +409,14 @@ def extract_file_from_zip(
         check_path_inside_minecraft_directory(minecraft_directory, extract_path)
 
     try:
-        os.makedirs(os.path.dirname(extract_path))
+        os.makedirs(os.path.dirname(extract_path), exist_ok=True)
     except Exception:
         pass
 
     with handler.open(zip_path, "r") as f:
-        with open(extract_path, "wb") as w:
-            w.write(f.read())
+        data = f.read()
+        async with aiofiles.open(extract_path, "wb") as w:
+            await w.write(data)
 
 
 def assert_func(expression: bool) -> None:
@@ -395,25 +429,30 @@ def assert_func(expression: bool) -> None:
         raise AssertionError()
 
 
-def get_client_json(version: str, minecraft_directory: str | os.PathLike) -> ClientJson:
-    "Load the client.json for the given version"
+async def get_client_json(
+    version: str, minecraft_directory: str | os.PathLike
+) -> ClientJson:
+    """Load the client.json for the given version"""
     local_path = os.path.join(
         minecraft_directory, "versions", version, f"{version}.json"
     )
     if os.path.isfile(local_path):
-        with open(local_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        async with aiofiles.open(local_path, "r", encoding="utf-8") as f:
+            data = json.loads(await f.read())
 
         if "inheritsFrom" in data:
-            data = inherit_json(data, minecraft_directory)
+            data = await inherit_json(data, minecraft_directory)
 
         return data
 
-    version_list = get_requests_response_cache(
-        "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
-    ).json()
+    version_list = (
+        await get_requests_response_cache(
+            "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
+        )
+    )["json_data"]
+
     for i in version_list["versions"]:
         if i["id"] == version:
-            return get_requests_response_cache(i["url"]).json()
+            return (await get_requests_response_cache(i["url"]))["json_data"]
 
     raise VersionNotFound(version)

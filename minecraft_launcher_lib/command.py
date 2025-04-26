@@ -14,6 +14,7 @@ from .exceptions import VersionNotFound
 from .utils import get_library_version
 from ._types import MinecraftOptions
 from .natives import get_natives
+import aiofiles
 import json
 import copy
 import os
@@ -162,7 +163,7 @@ def get_arguments(
     return arglist
 
 
-def get_minecraft_command(
+async def get_minecraft_command(
     version: str, minecraft_directory: str | os.PathLike, options: MinecraftOptions
 ) -> list[str]:
     """
@@ -214,15 +215,12 @@ def get_minecraft_command(
 
     options = copy.deepcopy(options)
 
-    with open(
-        os.path.join(path, "versions", version, version + ".json"),
-        "r",
-        encoding="utf-8",
-    ) as f:
-        data: ClientJson = json.load(f)
+    json_path = os.path.join(path, "versions", version, version + ".json")
+    async with aiofiles.open(json_path, "r", encoding="utf-8") as f:
+        data: ClientJson = json.loads(await f.read())
 
     if "inheritsFrom" in data:
-        data = inherit_json(data, path)
+        data = await inherit_json(data, path)
 
     options["nativesDirectory"] = options.get(
         "nativesDirectory", os.path.join(path, "versions", data["id"], "natives")
@@ -234,7 +232,7 @@ def get_minecraft_command(
     if "executablePath" in options:
         command.append(options["executablePath"])
     elif "javaVersion" in data:
-        java_path = get_executable_path(data["javaVersion"]["component"], path)
+        java_path = await get_executable_path(data["javaVersion"]["component"], path)
         if java_path is None:
             command.append("java")
         else:

@@ -13,7 +13,8 @@ from .forge import install_forge_version
 from .exceptions import VersionNotFound
 from .fabric import install_fabric
 from .quilt import install_quilt
-import requests
+import aiohttp
+import aiofiles
 import zipfile
 import json
 import os
@@ -41,7 +42,7 @@ def _filter_mrpack_files(
     return filtered_list
 
 
-def get_mrpack_information(path: str | os.PathLike) -> MrpackInformation:
+async def get_mrpack_information(path: str | os.PathLike) -> MrpackInformation:
     """
     Gets some Information from a .mrpack file
 
@@ -50,7 +51,7 @@ def get_mrpack_information(path: str | os.PathLike) -> MrpackInformation:
     .. code:: python
 
         path = "/path/to/mrpack"
-        information = minecraft_launcher_lib.mrpack.get_mrpack_information(path)
+        information = await minecraft_launcher_lib.mrpack.get_mrpack_information(path)
         print("Name: " + information["name"])
         print("Summary: " + information["summary"])
 
@@ -60,7 +61,8 @@ def get_mrpack_information(path: str | os.PathLike) -> MrpackInformation:
     """
     with zipfile.ZipFile(path, "r") as zf:
         with zf.open("modrinth.index.json", "r") as f:
-            index: MrpackIndex = json.load(f)
+            index_data = f.read()
+            index: MrpackIndex = json.loads(index_data)
 
             information: MrpackInformation = {}  # type: ignore
             information["name"] = index["name"]
@@ -80,7 +82,7 @@ def get_mrpack_information(path: str | os.PathLike) -> MrpackInformation:
             return information
 
 
-def install_mrpack(
+async def install_mrpack(
     path: str | os.PathLike,
     minecraft_directory: str | os.PathLike,
     modpack_directory: str | os.PathLike | None = None,
@@ -105,7 +107,7 @@ def install_mrpack(
 
         path = "/path/to/mrpack"
         minecraft_directory = minecraft_directory.utils.get_minecraft_directory()
-        minecraft_launcher_lib.mrpack.install_mrpack(path, minecraft_directory)
+        await minecraft_launcher_lib.mrpack.install_mrpack(path, minecraft_directory)
 
     :param path: The Path the the .mrpack file
     :param minecraft_directory: he path to your Minecraft directory
@@ -130,7 +132,8 @@ def install_mrpack(
 
     with zipfile.ZipFile(path, "r") as zf:
         with zf.open("modrinth.index.json", "r") as f:
-            index: MrpackIndex = json.load(f)
+            index_data = f.read()
+            index: MrpackIndex = json.loads(index_data)
 
         # Download the files
         callback.get("setStatus", empty)("Download mrpack files")
@@ -141,7 +144,7 @@ def install_mrpack(
 
             check_path_inside_minecraft_directory(modpack_directory, full_path)
 
-            download_file(
+            await download_file(
                 file["downloads"][0],
                 full_path,
                 sha1=file["hashes"]["sha1"],
@@ -175,12 +178,13 @@ def install_mrpack(
             callback.get("setStatus", empty)(f"Extract {zip_name}]")
 
             try:
-                os.makedirs(os.path.dirname(full_path))
+                os.makedirs(os.path.dirname(full_path), exist_ok=True)
             except FileExistsError:
                 pass
 
-            with open(full_path, "wb") as f:
-                f.write(zf.read(zip_name))
+            file_data = zf.read(zip_name)
+            async with aiofiles.open(full_path, "wb") as f:
+                await f.write(file_data)
 
         if mrpack_install_options.get("skipDependenciesInstall"):
             return
@@ -189,36 +193,38 @@ def install_mrpack(
         callback.get("setStatus", empty)(
             "Installing Minecraft " + index["dependencies"]["minecraft"]
         )
-        install_minecraft_version(
+        await install_minecraft_version(
             index["dependencies"]["minecraft"], minecraft_directory, callback=callback
         )
 
         if "forge" in index["dependencies"]:
             forge_version = None
             FORGE_DOWNLOAD_URL = "https://maven.minecraftforge.net/net/minecraftforge/forge/{version}/forge-{version}-installer.jar"
-            for current_forge_version in (
-                index["dependencies"]["minecraft"]
-                + "-"
-                + index["dependencies"]["forge"],
-                index["dependencies"]["minecraft"]
-                + "-"
-                + index["dependencies"]["forge"]
-                + "-"
-                + index["dependencies"]["minecraft"],
-            ):
-                if (
-                    requests.head(
-                        FORGE_DOWNLOAD_URL.replace("{version}", current_forge_version)
-                    ).status_code
-                    == 200
+
+            # Check forge version availability
+            async with aiohttp.ClientSession() as session:
+                for current_forge_version in (
+                    index["dependencies"]["minecraft"]
+                    + "-"
+                    + index["dependencies"]["forge"],
+                    index["dependencies"]["minecraft"]
+                    + "-"
+                    + index["dependencies"]["forge"]
+                    + "-"
+                    + index["dependencies"]["minecraft"],
                 ):
-                    forge_version = current_forge_version
-                    break
-            else:
-                raise VersionNotFound(index["dependencies"]["forge"])
+                    url = FORGE_DOWNLOAD_URL.format(version=current_forge_version)
+                    async with session.head(url) as response:
+                        if response.status == 200:
+                            forge_version = current_forge_version
+                            break
+                else:
+                    raise VersionNotFound(index["dependencies"]["forge"])
 
             callback.get("setStatus", empty)(f"Installing Forge {forge_version}")
-            install_forge_version(forge_version, minecraft_directory, callback=callback)
+            await install_forge_version(
+                forge_version, minecraft_directory, callback=callback
+            )
 
         if "fabric-loader" in index["dependencies"]:
             callback.get("setStatus", empty)(
@@ -227,7 +233,7 @@ def install_mrpack(
                 + " for Minecraft "
                 + index["dependencies"]["minecraft"]
             )
-            install_fabric(
+            await install_fabric(
                 index["dependencies"]["minecraft"],
                 minecraft_directory,
                 loader_version=index["dependencies"]["fabric-loader"],
@@ -241,7 +247,7 @@ def install_mrpack(
                 + " for Minecraft "
                 + index["dependencies"]["minecraft"]
             )
-            install_quilt(
+            await install_quilt(
                 index["dependencies"]["minecraft"],
                 minecraft_directory,
                 loader_version=index["dependencies"]["quilt-loader"],
@@ -249,7 +255,7 @@ def install_mrpack(
             )
 
 
-def get_mrpack_launch_version(path: str | os.PathLike) -> str:
+async def get_mrpack_launch_version(path: str | os.PathLike) -> str:
     """
     Returns that Version that needs to be used with :func:`~minecraft_launcher_lib.command.get_minecraft_command`.
 
@@ -258,14 +264,15 @@ def get_mrpack_launch_version(path: str | os.PathLike) -> str:
     .. code:: python
 
         path = "/path/to/mrpack"
-        print("Launch version: " + minecraft_launcher_lib.mrpack.get_mrpack_launch_version(path))
+        print("Launch version: " + await minecraft_launcher_lib.mrpack.get_mrpack_launch_version(path))
 
     :param path: The Path the the .mrpack file
     :return: The version
     """
     with zipfile.ZipFile(path, "r") as zf:
         with zf.open("modrinth.index.json", "r") as f:
-            index: MrpackIndex = json.load(f)
+            index_data = f.read()
+            index: MrpackIndex = json.loads(index_data)
 
             if "forge" in index["dependencies"]:
                 return (
