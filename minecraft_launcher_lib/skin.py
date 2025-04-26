@@ -6,12 +6,12 @@ It provides functions to get the skin URL, get the skin data, and download the s
 Copyright (c) 2025 JaydenChao101 <jaydenchao@proton.me> and contributors
 """
 
-
-from .types import skin, Credential
+from ._types import skin, Credential
 from base64 import b64decode
 import json
 from typing import Optional
 from minecraft_launcher_lib import requests
+
 
 async def get_skin_and_cape(Credential: Credential) -> Optional[skin, None]:
     """
@@ -35,13 +35,16 @@ async def get_skin_and_cape(Credential: Credential) -> Optional[skin, None]:
             textures = textures_json.get("textures", {})
             skin_url = textures.get("SKIN", {}).get("url")
             cape_url = textures.get("CAPE", {}).get("url")
-            return {
-                "skin": skin_url,
-                "cape": cape_url
-            }
+            return {"skin": skin_url, "cape": cape_url}
     return None
 
-async def change_skin(Credential: Credential, skin_url: str, model: str = "", cape_url: Optional[str] = None) -> bool:
+
+async def change_skin(
+    Credential: Credential,
+    skin_url: str,
+    model: str = "",
+    cape_url: Optional[str] = None,
+) -> bool:
     """
     更改玩家的外觀（通过URL）。
 
@@ -54,15 +57,11 @@ async def change_skin(Credential: Credential, skin_url: str, model: str = "", ca
     uuid = Credential["uuid"]
     access_token = Credential["access_token"]
     url = f"https://api.mojang.com/user/profile/{uuid}/skin"
-    headers = {
-        "Authorization": f"Bearer {access_token}"
-    }
-    data = {
-        "model": model,
-        "url": skin_url
-    }
+    headers = {"Authorization": f"Bearer {access_token}"}
+    data = {"model": model, "url": skin_url}
     response = requests.post(url, headers=headers, data=data)
     return response.status_code == 204
+
 
 async def upload_skin(Credential: Credential, file_path: str, model: str = "") -> bool:
     """
@@ -76,18 +75,13 @@ async def upload_skin(Credential: Credential, file_path: str, model: str = "") -
     uuid = Credential["uuid"]
     access_token = Credential["access_token"]
     url = f"https://api.mojang.com/user/profile/{uuid}/skin"
-    headers = {
-        "Authorization": f"Bearer {access_token}"
-    }
-    files = {
-        "file": open(file_path, "rb")
-    }
-    data = {
-        "model": model
-    }
+    headers = {"Authorization": f"Bearer {access_token}"}
+    files = {"file": open(file_path, "rb")}
+    data = {"model": model}
     response = requests.put(url, headers=headers, files=files, data=data)
     files["file"].close()
     return response.status_code == 204
+
 
 async def reset_skin(Credential: Credential) -> bool:
     """
@@ -99,8 +93,6 @@ async def reset_skin(Credential: Credential) -> bool:
     uuid = Credential["uuid"]
     access_token = Credential["access_token"]
     url = f"https://api.mojang.com/user/profile/{uuid}/skin"
-    headers = {
-        "Authorization": f"Bearer {access_token}"
-    }
+    headers = {"Authorization": f"Bearer {access_token}"}
     response = requests.delete(url, headers=headers)
     return response.status_code == 204

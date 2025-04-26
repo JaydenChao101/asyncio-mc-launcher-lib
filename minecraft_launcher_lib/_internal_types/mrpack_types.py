@@ -22,12 +22,11 @@ class MrpackFile(TypedDict, total=False):
     fileSize: int
 
 
-MrpackDependencies = TypedDict("MrpackDependencies", {
-    "minecraft": str,
-    "forge": str,
-    "fabric-loader": str,
-    "quilt-loader": str
-}, total=False)
+MrpackDependencies = TypedDict(
+    "MrpackDependencies",
+    {"minecraft": str, "forge": str, "fabric-loader": str, "quilt-loader": str},
+    total=False,
+)
 
 
 class MrpackIndex(TypedDict, total=False):

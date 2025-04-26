@@ -6,7 +6,7 @@ mrpack allows you to install Modpacks from the `Mrpack Format <https://support.m
 You should also take a look at the :doc:`complete example </examples/Mrpack>`.
 """
 from ._helper import download_file, empty, check_path_inside_minecraft_directory
-from .types import MrpackInformation, MrpackInstallOptions, CallbackDict
+from ._types import MrpackInformation, MrpackInstallOptions, CallbackDict
 from ._internal_types.mrpack_types import MrpackIndex, MrpackFile
 from .install import install_minecraft_version
 from .forge import install_forge_version
@@ -19,7 +19,9 @@ import json
 import os
 
 
-def _filter_mrpack_files(file_list: list[MrpackFile], mrpack_install_options: MrpackInstallOptions) -> list[MrpackFile]:
+def _filter_mrpack_files(
+    file_list: list[MrpackFile], mrpack_install_options: MrpackInstallOptions
+) -> list[MrpackFile]:
     """
     Gets all Mrpack Files that should be installed
     """
@@ -31,7 +33,9 @@ def _filter_mrpack_files(file_list: list[MrpackFile], mrpack_install_options: Mr
 
         if file["env"]["client"] == "required":
             filtered_list.append(file)
-        if file["env"]["client"] == "optional" and file["path"] in mrpack_install_options.get("optionalFiles", []):
+        if file["env"]["client"] == "optional" and file[
+            "path"
+        ] in mrpack_install_options.get("optionalFiles", []):
             filtered_list.append(file)
 
     return filtered_list
@@ -76,7 +80,13 @@ def get_mrpack_information(path: str | os.PathLike) -> MrpackInformation:
             return information
 
 
-def install_mrpack(path: str | os.PathLike, minecraft_directory: str | os.PathLike, modpack_directory: str | os.PathLike | None = None, callback: CallbackDict | None = None, mrpack_install_options: MrpackInstallOptions | None = None) -> None:
+def install_mrpack(
+    path: str | os.PathLike,
+    minecraft_directory: str | os.PathLike,
+    modpack_directory: str | os.PathLike | None = None,
+    callback: CallbackDict | None = None,
+    mrpack_install_options: MrpackInstallOptions | None = None,
+) -> None:
     """
     Installs a .mrpack file
 
@@ -131,7 +141,12 @@ def install_mrpack(path: str | os.PathLike, minecraft_directory: str | os.PathLi
 
             check_path_inside_minecraft_directory(modpack_directory, full_path)
 
-            download_file(file["downloads"][0], full_path, sha1=file["hashes"]["sha1"], callback=callback)
+            download_file(
+                file["downloads"][0],
+                full_path,
+                sha1=file["hashes"]["sha1"],
+                callback=callback,
+            )
 
             callback.get("setProgress", empty)(count + 1)
 
@@ -139,15 +154,18 @@ def install_mrpack(path: str | os.PathLike, minecraft_directory: str | os.PathLi
         callback.get("setStatus", empty)("Extract overrides")
         for zip_name in zf.namelist():
             # Check if the entry is in the overrides and if it is a file
-            if (not zip_name.startswith("overrides/") and not zip_name.startswith("client-overrides/")) or zf.getinfo(zip_name).file_size == 0:
+            if (
+                not zip_name.startswith("overrides/")
+                and not zip_name.startswith("client-overrides/")
+            ) or zf.getinfo(zip_name).file_size == 0:
                 continue
 
             # Remove the overrides at the start of the Name
             # We don't have removeprefix() in Python 3.8
             if zip_name.startswith("client-overrides/"):
-                file_name = zip_name[len("client-overrides/"):]
+                file_name = zip_name[len("client-overrides/") :]
             else:
-                file_name = zip_name[len("overrides/"):]
+                file_name = zip_name[len("overrides/") :]
 
             # Constructs the full Path
             full_path = os.path.abspath(os.path.join(modpack_directory, file_name))
@@ -168,14 +186,32 @@ def install_mrpack(path: str | os.PathLike, minecraft_directory: str | os.PathLi
             return
 
         # Install dependencies
-        callback.get("setStatus", empty)("Installing Minecraft " + index["dependencies"]["minecraft"])
-        install_minecraft_version(index["dependencies"]["minecraft"], minecraft_directory, callback=callback)
+        callback.get("setStatus", empty)(
+            "Installing Minecraft " + index["dependencies"]["minecraft"]
+        )
+        install_minecraft_version(
+            index["dependencies"]["minecraft"], minecraft_directory, callback=callback
+        )
 
         if "forge" in index["dependencies"]:
             forge_version = None
             FORGE_DOWNLOAD_URL = "https://maven.minecraftforge.net/net/minecraftforge/forge/{version}/forge-{version}-installer.jar"
-            for current_forge_version in (index["dependencies"]["minecraft"] + "-" + index["dependencies"]["forge"], index["dependencies"]["minecraft"] + "-" + index["dependencies"]["forge"] + "-" + index["dependencies"]["minecraft"]):
-                if requests.head(FORGE_DOWNLOAD_URL.replace("{version}", current_forge_version)).status_code == 200:
+            for current_forge_version in (
+                index["dependencies"]["minecraft"]
+                + "-"
+                + index["dependencies"]["forge"],
+                index["dependencies"]["minecraft"]
+                + "-"
+                + index["dependencies"]["forge"]
+                + "-"
+                + index["dependencies"]["minecraft"],
+            ):
+                if (
+                    requests.head(
+                        FORGE_DOWNLOAD_URL.replace("{version}", current_forge_version)
+                    ).status_code
+                    == 200
+                ):
                     forge_version = current_forge_version
                     break
             else:
@@ -185,12 +221,32 @@ def install_mrpack(path: str | os.PathLike, minecraft_directory: str | os.PathLi
             install_forge_version(forge_version, minecraft_directory, callback=callback)
 
         if "fabric-loader" in index["dependencies"]:
-            callback.get("setStatus", empty)("Installing Fabric " + index["dependencies"]["fabric-loader"] + " for Minecraft " + index["dependencies"]["minecraft"])
-            install_fabric(index["dependencies"]["minecraft"], minecraft_directory, loader_version=index["dependencies"]["fabric-loader"], callback=callback)
+            callback.get("setStatus", empty)(
+                "Installing Fabric "
+                + index["dependencies"]["fabric-loader"]
+                + " for Minecraft "
+                + index["dependencies"]["minecraft"]
+            )
+            install_fabric(
+                index["dependencies"]["minecraft"],
+                minecraft_directory,
+                loader_version=index["dependencies"]["fabric-loader"],
+                callback=callback,
+            )
 
         if "quilt-loader" in index["dependencies"]:
-            callback.get("setStatus", empty)("Installing Quilt " + index["dependencies"]["quilt-loader"] + " for Minecraft " + index["dependencies"]["minecraft"])
-            install_quilt(index["dependencies"]["minecraft"], minecraft_directory, loader_version=index["dependencies"]["quilt-loader"], callback=callback)
+            callback.get("setStatus", empty)(
+                "Installing Quilt "
+                + index["dependencies"]["quilt-loader"]
+                + " for Minecraft "
+                + index["dependencies"]["minecraft"]
+            )
+            install_quilt(
+                index["dependencies"]["minecraft"],
+                minecraft_directory,
+                loader_version=index["dependencies"]["quilt-loader"],
+                callback=callback,
+            )
 
 
 def get_mrpack_launch_version(path: str | os.PathLike) -> str:
@@ -212,10 +268,24 @@ def get_mrpack_launch_version(path: str | os.PathLike) -> str:
             index: MrpackIndex = json.load(f)
 
             if "forge" in index["dependencies"]:
-                return index["dependencies"]["minecraft"] + "-forge-" + index["dependencies"]["forge"]
+                return (
+                    index["dependencies"]["minecraft"]
+                    + "-forge-"
+                    + index["dependencies"]["forge"]
+                )
             elif "fabric-loader" in index["dependencies"]:
-                return "fabric-loader-" + index["dependencies"]["fabric-loader"] + "-" + index["dependencies"]["minecraft"]
+                return (
+                    "fabric-loader-"
+                    + index["dependencies"]["fabric-loader"]
+                    + "-"
+                    + index["dependencies"]["minecraft"]
+                )
             elif "quilt-loader" in index["dependencies"]:
-                return "quilt-loader-" + index["dependencies"]["quilt-loader"] + "-" + index["dependencies"]["minecraft"]
+                return (
+                    "quilt-loader-"
+                    + index["dependencies"]["quilt-loader"]
+                    + "-"
+                    + index["dependencies"]["minecraft"]
+                )
             else:
                 return index["dependencies"]["minecraft"]

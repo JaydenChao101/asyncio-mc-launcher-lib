@@ -1,11 +1,19 @@
 import logging
 
+
 class LoggingSetting:
-    def __init__(self, level: int = logging.INFO, filename: str = None, enable_console: bool = False):
+    def __init__(
+        self,
+        level: int = logging.INFO,
+        filename: str = None,
+        enable_console: bool = False,
+    ):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(level)
 
-        formatter = logging.Formatter("%(asctime)s %(message)s", datefmt="%m/%d/%Y %I:%M:%S %p")
+        formatter = logging.Formatter(
+            "%(asctime)s %(message)s", datefmt="%m/%d/%Y %I:%M:%S %p"
+        )
 
         if enable_console:
             console_handler = logging.StreamHandler()

@@ -7,7 +7,17 @@ from typing import Union, Literal, TypedDict
 class ClientJsonRule(TypedDict):
     action: Literal["allow", "disallow"]
     os: dict[Literal["name", "arch", "vesion"], str]
-    features: dict[Literal["has_custom_resolution", "is_demo_user", "has_quick_plays_support", "is_quick_play_singleplayer", "is_quick_play_multiplayer", "is_quick_play_realms"], bool]
+    features: dict[
+        Literal[
+            "has_custom_resolution",
+            "is_demo_user",
+            "has_quick_plays_support",
+            "is_quick_play_singleplayer",
+            "is_quick_play_multiplayer",
+            "is_quick_play_realms",
+        ],
+        bool,
+    ]
 
 
 class ClientJsonArgumentRule(TypedDict, total=False):
@@ -44,7 +54,12 @@ class _ClientJsonLibraryDownloadsArtifact(TypedDict):
 
 class _ClientJsonLibraryDownloads(TypedDict, total=False):
     artifact: _ClientJsonLibraryDownloadsArtifact
-    classifiers: dict[Literal["javadoc", "natives-linux", "natives-macos", "natives-windows", "sources"], _ClientJsonLibraryDownloadsArtifact]
+    classifiers: dict[
+        Literal[
+            "javadoc", "natives-linux", "natives-macos", "natives-windows", "sources"
+        ],
+        _ClientJsonLibraryDownloadsArtifact,
+    ]
 
 
 class ClientJsonLibrary(TypedDict, total=False):
@@ -76,7 +91,10 @@ class ClientJson(TypedDict, total=False):
     minecraftArguments: str
     assetIndex: _ClientJsonAssetIndex
     assets: str
-    downloads: dict[Literal["client", "client_mappings", "server", "server_mappings"], _ClientJsonDownloads]
+    downloads: dict[
+        Literal["client", "client_mappings", "server", "server_mappings"],
+        _ClientJsonDownloads,
+    ]
     javaVersion: _ClientJsonJavaVersion
     libraries: list[ClientJsonLibrary]
     logging: dict[Literal["client"], _ClientJsonLogging]

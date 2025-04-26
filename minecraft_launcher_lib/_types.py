@@ -57,6 +57,7 @@ class MinecraftVersionInfo(TypedDict):
 
 # fabric
 
+
 class FabricMinecraftVersion(TypedDict):
     version: str
     stable: bool
@@ -72,6 +73,7 @@ class FabricLoader(TypedDict):
 
 # quilt
 
+
 class QuiltMinecraftVersion(TypedDict):
     version: str
     stable: bool
@@ -86,6 +88,7 @@ class QuiltLoader(TypedDict):
 
 # java_utils
 
+
 class JavaInformation(TypedDict):
     path: str
     name: str
@@ -97,6 +100,7 @@ class JavaInformation(TypedDict):
 
 
 # vanilla_launcher
+
 
 class VanillaLauncherProfileResolution(TypedDict):
     height: int
@@ -115,6 +119,7 @@ class VanillaLauncherProfile(TypedDict, total=False):
 
 # mrpack
 
+
 class MrpackInformation(TypedDict):
     name: str
     summary: str
@@ -130,6 +135,7 @@ class MrpackInstallOptions(TypedDict, total=False):
 
 
 # runtime
+
 
 class JvmRuntimeInformation(TypedDict):
     name: str
@@ -192,11 +198,13 @@ class JavaPatchNotes(TypedDict):
     version: Literal[1]
     entries: list[_JavaPatchNoteEntry]
 
+
 class Credential(TypedDict):
     access_token: str
     username: str
     uuid: uuid4
 
+
 class skin(TypedDict):
-    skin:str
-    cape:str
+    skin: str
+    cape: str

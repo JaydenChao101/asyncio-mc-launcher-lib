@@ -24,12 +24,12 @@ def get_natives(data: ClientJsonLibrary) -> str:
         arch_type = "64"
 
     if "natives" in data:
-        if platform.system() == 'Windows':
+        if platform.system() == "Windows":
             if "windows" in data["natives"]:
                 return data["natives"]["windows"].replace("${arch}", arch_type)
             else:
                 return ""
-        elif platform.system() == 'Darwin':
+        elif platform.system() == "Darwin":
             if "osx" in data["natives"]:
                 return data["natives"]["osx"].replace("${arch}", arch_type)
             else:
@@ -43,7 +43,9 @@ def get_natives(data: ClientJsonLibrary) -> str:
         return ""
 
 
-def extract_natives_file(filename: str, extract_path: str, extract_data: dict[Literal["exclude"], list[str]]) -> None:
+def extract_natives_file(
+    filename: str, extract_path: str, extract_data: dict[Literal["exclude"], list[str]]
+) -> None:
     """
     Unpack natives
     """
@@ -73,10 +75,16 @@ def extract_natives(versionid: str, path: str | os.PathLike, extract_path: str) 
 
     The natives are all extracted while installing. So you don't need to use this function in most cases.
     """
-    if not os.path.isfile(os.path.join(path, "versions", versionid, versionid + ".json")):
+    if not os.path.isfile(
+        os.path.join(path, "versions", versionid, versionid + ".json")
+    ):
         raise VersionNotFound(versionid)
 
-    with open(os.path.join(path, "versions", versionid, versionid + ".json"), "r", encoding="utf-8") as f:
+    with open(
+        os.path.join(path, "versions", versionid, versionid + ".json"),
+        "r",
+        encoding="utf-8",
+    ) as f:
         data: ClientJson = json.load(f)
 
     if "inheritsFrom" in data:
@@ -94,4 +102,8 @@ def extract_natives(versionid: str, path: str | os.PathLike, extract_path: str) 
             continue
 
         lib_path, extension = os.path.splitext(current_path)
-        extract_natives_file(f"{lib_path}-{native}{extension}", extract_path, i.get("extract", {"exclude": []}))
+        extract_natives_file(
+            f"{lib_path}-{native}{extension}",
+            extract_path,
+            i.get("extract", {"exclude": []}),
+        )

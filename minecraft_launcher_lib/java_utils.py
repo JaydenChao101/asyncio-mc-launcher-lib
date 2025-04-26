@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 "java_utils contains some functions to help with Java"
 from ._helper import SUBPROCESS_STARTUP_INFO
-from .types import JavaInformation
+from ._types import JavaInformation
 import subprocess
 import platform
 import re
@@ -33,12 +33,22 @@ def get_java_information(path: str | os.PathLike) -> JavaInformation:
     """
     if platform.system() == "Windows":
         if not os.path.isfile(os.path.join(path, "bin", "java.exe")):
-            raise ValueError(os.path.abspath(os.path.join(path, "bin", "java.exe")) + " was not found")
+            raise ValueError(
+                os.path.abspath(os.path.join(path, "bin", "java.exe"))
+                + " was not found"
+            )
     else:
         if not os.path.isfile(os.path.join(path, "bin", "java")):
-            raise ValueError(os.path.abspath(os.path.join(path, "bin", "java")) + " was not found")
+            raise ValueError(
+                os.path.abspath(os.path.join(path, "bin", "java")) + " was not found"
+            )
 
-    lines = subprocess.run([os.path.join(path, "bin", "java"), "-showversion"], capture_output=True, text=True, startupinfo=SUBPROCESS_STARTUP_INFO).stderr.splitlines()
+    lines = subprocess.run(
+        [os.path.join(path, "bin", "java"), "-showversion"],
+        capture_output=True,
+        text=True,
+        startupinfo=SUBPROCESS_STARTUP_INFO,
+    ).stderr.splitlines()
     information: JavaInformation = {}  # type: ignore
     information["path"] = str(path)
     information["name"] = os.path.basename(path)
@@ -47,8 +57,12 @@ def get_java_information(path: str | os.PathLike) -> JavaInformation:
     information["openjdk"] = lines[0].startswith("openjdk")
 
     if platform.system() == "Windows":
-        information["java_path"] = os.path.join(os.path.abspath(path), "bin", "java.exe")
-        information["javaw_path"] = os.path.join(os.path.abspath(path), "bin", "javaw.exe")
+        information["java_path"] = os.path.join(
+            os.path.abspath(path), "bin", "java.exe"
+        )
+        information["javaw_path"] = os.path.join(
+            os.path.abspath(path), "bin", "javaw.exe"
+        )
     else:
         information["java_path"] = os.path.join(os.path.abspath(path), "bin", "java")
         information["javaw_path"] = None
@@ -68,13 +82,17 @@ def _search_java_directory(path: str | os.PathLike) -> list[str]:
         if os.path.isfile(current_entry) or os.path.islink(current_entry):
             continue
 
-        if os.path.isfile(os.path.join(current_entry, "bin", "java")) or os.path.isfile(os.path.join(current_entry, "bin", "java.exe")):
+        if os.path.isfile(os.path.join(current_entry, "bin", "java")) or os.path.isfile(
+            os.path.join(current_entry, "bin", "java.exe")
+        ):
             java_list.append(current_entry)
 
     return java_list
 
 
-def find_system_java_versions(additional_directories: list[str | os.PathLike] | None = None) -> list[str]:
+def find_system_java_versions(
+    additional_directories: list[str | os.PathLike] | None = None,
+) -> list[str]:
     """
     Try to find all Java Versions installed on the System. You can use this to e.g. let the User choose between different Java Versions in a Dropdown.
     macOS is not supported yet.
@@ -106,7 +124,9 @@ def find_system_java_versions(additional_directories: list[str | os.PathLike] | 
     return java_list
 
 
-def find_system_java_versions_information(additional_directories: list[str | os.PathLike] | None = None) -> list[JavaInformation]:
+def find_system_java_versions_information(
+    additional_directories: list[str | os.PathLike] | None = None,
+) -> list[JavaInformation]:
     """
     Same as :func:`find_system_java_version`, but uses :func:`get_java_information` to get some Information about the Installation instead of just proving a Path.
     macOS is not supported yet
