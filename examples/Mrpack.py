@@ -52,7 +52,7 @@ def main() -> None:
         modpack_directory = minecraft_directory
 
     # Adds the Optional Files
-    mrpack_install_options: minecraft_launcher_lib.types.MrpackInstallOptions = {"optionalFiles": []}
+    mrpack_install_options: minecraft_launcher_lib._types.MrpackInstallOptions = {"optionalFiles": []}
     for i in mrpack_information["optionalFiles"]:
         if ask_yes_no(f"The Pack includes the Optional File {i}. Do you want to install it?"):
             mrpack_install_options["optionalFiles"].append(i)

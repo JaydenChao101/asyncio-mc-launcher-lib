@@ -35,7 +35,7 @@ You can even use it when you are calling a function:
 
     import minecraft_launcher_lib
 
-    options: minecraft_launcher_lib.types.MinecraftOptions = {}
+    options: minecraft_launcher_lib._types.MinecraftOptions = {}
     options["username"] = "Test123"
 
 When using a IDE, you will see that it will start autocompleting the keys of the Dict while writing.
