@@ -36,6 +36,7 @@ classifiers = [
 ]
 dependencies = [
   "requests",
+  "requests-mock>=1.12.1",
   "ruff==0.11.7",
 ]
 dynamic = ["version"]
