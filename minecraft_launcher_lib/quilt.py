@@ -7,9 +7,15 @@ quilt contains functions for dealing with the `Quilt modloader <https://quiltmc.
 You may have noticed, that the Functions are the same as in the :doc:`fabric` module.
 That's because Quilt is a Fork of Fabric. This module behaves exactly the same as the fabric module.
 """
-from ._helper import download_file, get_requests_response_cache, parse_maven_metadata, empty, SUBPROCESS_STARTUP_INFO
+from ._helper import (
+    download_file,
+    get_requests_response_cache,
+    parse_maven_metadata,
+    empty,
+    SUBPROCESS_STARTUP_INFO,
+)
 from .exceptions import VersionNotFound, UnsupportedVersion, ExternalProgramError
-from .types import QuiltMinecraftVersion, QuiltLoader, CallbackDict
+from ._types import QuiltMinecraftVersion, QuiltLoader, CallbackDict
 from .install import install_minecraft_version
 from .utils import is_version_valid
 import subprocess
@@ -146,7 +152,13 @@ def get_latest_installer_version() -> str:
     return parse_maven_metadata(QUILT_INSTALLER_MAVEN_URL)["latest"]
 
 
-def install_quilt(minecraft_version: str, minecraft_directory: str | os.PathLike, loader_version: str | None = None, callback: CallbackDict | None = None, java: str | os.PathLike | None = None) -> None:
+def install_quilt(
+    minecraft_version: str,
+    minecraft_directory: str | os.PathLike,
+    loader_version: str | None = None,
+    callback: CallbackDict | None = None,
+    java: str | os.PathLike | None = None,
+) -> None:
     """
     Installs the Quilt modloader.
 
@@ -189,16 +201,35 @@ def install_quilt(minecraft_version: str, minecraft_directory: str | os.PathLike
     installer_version = get_latest_installer_version()
     installer_download_url = f"https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/{installer_version}/quilt-installer-{installer_version}.jar"
 
-    with tempfile.TemporaryDirectory(prefix="minecraft-launcher-lib-quilt-install-") as tempdir:
+    with tempfile.TemporaryDirectory(
+        prefix="minecraft-launcher-lib-quilt-install-"
+    ) as tempdir:
         installer_path = os.path.join(tempdir, "quit-installer.jar")
 
         # Download the installer
-        download_file(installer_download_url, installer_path, callback=callback, overwrite=True)
+        download_file(
+            installer_download_url, installer_path, callback=callback, overwrite=True
+        )
 
         # Run the installer
         callback.get("setStatus", empty)("Running quilt installer")
-        command = ["java" if java is None else str(java), "-jar", installer_path, "install", "client", minecraft_version, loader_version, f"--install-dir={path}", "--no-profile"]
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, startupinfo=SUBPROCESS_STARTUP_INFO)
+        command = [
+            "java" if java is None else str(java),
+            "-jar",
+            installer_path,
+            "install",
+            "client",
+            minecraft_version,
+            loader_version,
+            f"--install-dir={path}",
+            "--no-profile",
+        ]
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            startupinfo=SUBPROCESS_STARTUP_INFO,
+        )
         if result.returncode != 0:
             raise ExternalProgramError(command, result.stdout, result.stderr)
 

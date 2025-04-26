@@ -2,9 +2,14 @@
 # SPDX-FileCopyrightText: Copyright (c) 2019-2025 JakobDev <jakobdev@gmx.de> and contributors
 # SPDX-License-Identifier: BSD-2-Clause
 "fabric contains functions for dealing with the `Fabric modloader <https://fabricmc.net/>`_."
-from ._helper import download_file, get_requests_response_cache, parse_maven_metadata, empty
+from ._helper import (
+    download_file,
+    get_requests_response_cache,
+    parse_maven_metadata,
+    empty,
+)
 from .exceptions import VersionNotFound, UnsupportedVersion, ExternalProgramError
-from .types import FabricMinecraftVersion, FabricLoader, CallbackDict
+from ._types import FabricMinecraftVersion, FabricLoader, CallbackDict
 from .install import install_minecraft_version
 from .utils import is_version_valid
 import subprocess
@@ -136,11 +141,19 @@ def get_latest_installer_version() -> str:
 
         print("Latest installer version: " + minecraft_launcher_lib.fabric.get_latest_installer_version())
     """
-    FABRIC_INSTALLER_MAVEN_URL = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/maven-metadata.xml"
+    FABRIC_INSTALLER_MAVEN_URL = (
+        "https://maven.fabricmc.net/net/fabricmc/fabric-installer/maven-metadata.xml"
+    )
     return parse_maven_metadata(FABRIC_INSTALLER_MAVEN_URL)["latest"]
 
 
-def install_fabric(minecraft_version: str, minecraft_directory: str | os.PathLike, loader_version: str | None = None, callback: CallbackDict | None = None, java: str | os.PathLike | None = None) -> None:
+def install_fabric(
+    minecraft_version: str,
+    minecraft_directory: str | os.PathLike,
+    loader_version: str | None = None,
+    callback: CallbackDict | None = None,
+    java: str | os.PathLike | None = None,
+) -> None:
     """
     Installs the Fabric modloader.
     For more information take a look at the :doc:`tutorial </tutorial/install_fabric>`.
@@ -184,15 +197,32 @@ def install_fabric(minecraft_version: str, minecraft_directory: str | os.PathLik
     installer_version = get_latest_installer_version()
     installer_download_url = f"https://maven.fabricmc.net/net/fabricmc/fabric-installer/{installer_version}/fabric-installer-{installer_version}.jar"
 
-    with tempfile.TemporaryDirectory(prefix="minecraft-launcher-lib-fabric-install-") as tempdir:
+    with tempfile.TemporaryDirectory(
+        prefix="minecraft-launcher-lib-fabric-install-"
+    ) as tempdir:
         installer_path = os.path.join(tempdir, "fabric-installer.jar")
 
         # Download the installer
-        download_file(installer_download_url, installer_path, callback=callback, overwrite=True)
+        download_file(
+            installer_download_url, installer_path, callback=callback, overwrite=True
+        )
 
         # Run the installer see https://fabricmc.net/wiki/install#cli_installation
         callback.get("setStatus", empty)("Running fabric installer")
-        command = ["java" if java is None else str(java), "-jar", installer_path, "client", "-dir", path, "-mcversion", minecraft_version, "-loader", loader_version, "-noprofile", "-snapshot"]
+        command = [
+            "java" if java is None else str(java),
+            "-jar",
+            installer_path,
+            "client",
+            "-dir",
+            path,
+            "-mcversion",
+            minecraft_version,
+            "-loader",
+            loader_version,
+            "-noprofile",
+            "-snapshot",
+        ]
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode != 0:
             raise ExternalProgramError(command, result.stdout, result.stderr)

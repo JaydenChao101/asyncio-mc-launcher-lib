@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2019-2025 JakobDev <jakobdev@gmx.de> and contributors
 # SPDX-License-Identifier: BSD-2-Clause
 "utils contains a few functions for helping you that doesn't fit in any other category"
-from .types import MinecraftOptions, LatestMinecraftVersions, MinecraftVersionInfo
+from ._types import MinecraftOptions, LatestMinecraftVersions, MinecraftVersionInfo
 from ._internal_types.shared_types import ClientJson, VersionListManifestJson
 from ._helper import get_requests_response_cache, assert_func
 from datetime import datetime
@@ -27,9 +27,16 @@ def get_minecraft_directory() -> str:
         print(f"The default minecraft directory is {minecraft_directory}")
     """
     if platform.system() == "Windows":
-        return os.path.join(os.getenv("APPDATA", os.path.join(pathlib.Path.home(), "AppData", "Roaming")), ".minecraft")
+        return os.path.join(
+            os.getenv(
+                "APPDATA", os.path.join(pathlib.Path.home(), "AppData", "Roaming")
+            ),
+            ".minecraft",
+        )
     elif platform.system() == "Darwin":
-        return os.path.join(str(pathlib.Path.home()), "Library", "Application Support", "minecraft")
+        return os.path.join(
+            str(pathlib.Path.home()), "Library", "Application Support", "minecraft"
+        )
     else:
         return os.path.join(str(pathlib.Path.home()), ".minecraft")
 
@@ -46,7 +53,9 @@ def get_latest_version() -> LatestMinecraftVersions:
         print("Latest Release " + latest_version["release"])
         print("Latest Snapshot " + latest_version["snapshot"])
     """
-    return get_requests_response_cache("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json").json()["latest"]
+    return get_requests_response_cache(
+        "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
+    ).json()["latest"]
 
 
 def get_version_list() -> list[MinecraftVersionInfo]:
@@ -60,14 +69,25 @@ def get_version_list() -> list[MinecraftVersionInfo]:
         for version in minecraft_launcher_lib.utils.get_version_list():
             print(version["id"])
     """
-    vlist: VersionListManifestJson = get_requests_response_cache("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json").json()
+    vlist: VersionListManifestJson = get_requests_response_cache(
+        "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
+    ).json()
     returnlist: list[MinecraftVersionInfo] = []
     for i in vlist["versions"]:
-        returnlist.append({"id": i["id"], "type": i["type"], "releaseTime": datetime.fromisoformat(i["releaseTime"]), "complianceLevel": i["complianceLevel"]})
+        returnlist.append(
+            {
+                "id": i["id"],
+                "type": i["type"],
+                "releaseTime": datetime.fromisoformat(i["releaseTime"]),
+                "complianceLevel": i["complianceLevel"],
+            }
+        )
     return returnlist
 
 
-def get_installed_versions(minecraft_directory: str | os.PathLike) -> list[MinecraftVersionInfo]:
+def get_installed_versions(
+    minecraft_directory: str | os.PathLike,
+) -> list[MinecraftVersionInfo]:
     """
     Returns all installed versions
 
@@ -88,10 +108,16 @@ def get_installed_versions(minecraft_directory: str | os.PathLike) -> list[Minec
 
     version_list: list[MinecraftVersionInfo] = []
     for i in dir_list:
-        if not os.path.isfile(os.path.join(minecraft_directory, "versions", i, i + ".json")):
+        if not os.path.isfile(
+            os.path.join(minecraft_directory, "versions", i, i + ".json")
+        ):
             continue
 
-        with open(os.path.join(minecraft_directory, "versions", i, i + ".json"), "r", encoding="utf-8") as f:
+        with open(
+            os.path.join(minecraft_directory, "versions", i, i + ".json"),
+            "r",
+            encoding="utf-8",
+        ) as f:
             version_data: ClientJson = json.load(f)
 
         try:
@@ -100,11 +126,20 @@ def get_installed_versions(minecraft_directory: str | os.PathLike) -> list[Minec
             # In case some custom client has a invalid time
             release_time = datetime.fromtimestamp(0)
 
-        version_list.append({"id": version_data["id"], "type": version_data["type"], "releaseTime": release_time, "complianceLevel": version_data.get("complianceLevel", 0)})
+        version_list.append(
+            {
+                "id": version_data["id"],
+                "type": version_data["type"],
+                "releaseTime": release_time,
+                "complianceLevel": version_data.get("complianceLevel", 0),
+            }
+        )
     return version_list
 
 
-def get_available_versions(minecraft_directory: str | os.PathLike) -> list[MinecraftVersionInfo]:
+def get_available_versions(
+    minecraft_directory: str | os.PathLike,
+) -> list[MinecraftVersionInfo]:
     """
     Returns all installed versions and all versions that Mojang offers to download
 
@@ -146,7 +181,9 @@ def get_java_executable() -> str:
     if platform.system() == "Windows":
         if (java_home := os.getenv("JAVA_HOME")) is not None:
             return os.path.join(java_home, "bin", "javaw.exe")
-        elif os.path.isfile(r"C:\Program Files (x86)\Common Files\Oracle\Java\javapath\javaw.exe"):
+        elif os.path.isfile(
+            r"C:\Program Files (x86)\Common Files\Oracle\Java\javapath\javaw.exe"
+        ):
             return r"C:\Program Files (x86)\Common Files\Oracle\Java\javapath\javaw.exe"
         else:
             return shutil.which("javaw") or "javaw"
@@ -158,7 +195,14 @@ def get_java_executable() -> str:
         if os.path.islink("/etc/alternatives/java"):
             return os.readlink("/etc/alternatives/java")
         elif os.path.islink("/usr/lib/jvm/default-runtime"):
-            return os.path.join("/usr", "lib", "jvm", os.readlink("/usr/lib/jvm/default-runtime"), "bin", "java")
+            return os.path.join(
+                "/usr",
+                "lib",
+                "jvm",
+                os.readlink("/usr/lib/jvm/default-runtime"),
+                "bin",
+                "java",
+            )
         else:
             return shutil.which("java") or "java"
 
@@ -180,7 +224,11 @@ def get_library_version() -> str:
     if _version_cache is not None:
         return _version_cache
     else:
-        with open(os.path.join(os.path.dirname(__file__), "version.txt"), "r", encoding="utf-8") as f:
+        with open(
+            os.path.join(os.path.dirname(__file__), "version.txt"),
+            "r",
+            encoding="utf-8",
+        ) as f:
             _version_cache = f.read().strip()
             return _version_cache
 
@@ -208,7 +256,7 @@ def generate_test_options() -> MinecraftOptions:
     return {
         "username": f"Player{random.randrange(100, 1000)}",
         "uuid": str(uuid.uuid4()),
-        "token": ""
+        "token": "",
     }
 
 

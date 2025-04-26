@@ -2,12 +2,17 @@
 # SPDX-FileCopyrightText: Copyright (c) 2019-2025 JakobDev <jakobdev@gmx.de> and contributors
 # SPDX-License-Identifier: BSD-2-Clause
 "command contains the function for creating the minecraft command"
-from ._helper import parse_rule_list, inherit_json, get_classpath_separator, get_library_path
+from ._helper import (
+    parse_rule_list,
+    inherit_json,
+    get_classpath_separator,
+    get_library_path,
+)
 from ._internal_types.shared_types import ClientJson, ClientJsonArgumentRule
 from .runtime import get_executable_path
 from .exceptions import VersionNotFound
 from .utils import get_library_version
-from .types import MinecraftOptions
+from ._types import MinecraftOptions
 from .natives import get_natives
 import json
 import copy
@@ -32,17 +37,30 @@ def get_libraries(data: ClientJson, path: str) -> str:
             if "downloads" in i and "path" in i["downloads"]["classifiers"][native]:  # type: ignore
                 libstr += os.path.join(path, "libraries", i["downloads"]["classifiers"][native]["path"]) + classpath_seperator  # type: ignore
             else:
-                libstr += get_library_path(i["name"] + "-" + native, path) + classpath_seperator
+                libstr += (
+                    get_library_path(i["name"] + "-" + native, path)
+                    + classpath_seperator
+                )
 
     if "jar" in data:
-        libstr = libstr + os.path.join(path, "versions", data["jar"], data["jar"] + ".jar")
+        libstr = libstr + os.path.join(
+            path, "versions", data["jar"], data["jar"] + ".jar"
+        )
     else:
-        libstr = libstr + os.path.join(path, "versions", data["id"], data["id"] + ".jar")
+        libstr = libstr + os.path.join(
+            path, "versions", data["id"], data["id"] + ".jar"
+        )
 
     return libstr
 
 
-def replace_arguments(argstr: str, versionData: ClientJson, path: str, options: MinecraftOptions, classpath: str) -> str:
+def replace_arguments(
+    argstr: str,
+    versionData: ClientJson,
+    path: str,
+    options: MinecraftOptions,
+    classpath: str,
+) -> str:
     """
     Replace all placeholder in arguments with the needed value
     """
@@ -68,8 +86,10 @@ def replace_arguments(argstr: str, versionData: ClientJson, path: str, options: 
         "${library_directory}": os.path.join(path, "libraries"),
         "${classpath_separator}": get_classpath_separator(),
         "${quickPlayPath}": options.get("quickPlayPath") or "{quickPlayPath}",
-        "${quickPlaySingleplayer}": options.get("quickPlaySingleplayer") or "{quickPlaySingleplayer}",
-        "${quickPlayMultiplayer}": options.get("quickPlayMultiplayer") or "{quickPlayMultiplayer}",
+        "${quickPlaySingleplayer}": options.get("quickPlaySingleplayer")
+        or "{quickPlaySingleplayer}",
+        "${quickPlayMultiplayer}": options.get("quickPlayMultiplayer")
+        or "{quickPlayMultiplayer}",
         "${quickPlayRealms}": options.get("quickPlayRealms") or "{quickPlayRealms}",
     }
 
@@ -79,7 +99,9 @@ def replace_arguments(argstr: str, versionData: ClientJson, path: str, options: 
     return argstr
 
 
-def get_arguments_string(versionData: ClientJson, path: str, options: MinecraftOptions, classpath: str) -> list[str]:
+def get_arguments_string(
+    versionData: ClientJson, path: str, options: MinecraftOptions, classpath: str
+) -> list[str]:
     """
     Turns the argument string from the client.json into a list
     """
@@ -102,7 +124,13 @@ def get_arguments_string(versionData: ClientJson, path: str, options: MinecraftO
     return arglist
 
 
-def get_arguments(data: list[str | ClientJsonArgumentRule], versionData: ClientJson, path: str, options: MinecraftOptions, classpath: str) -> list[str]:
+def get_arguments(
+    data: list[str | ClientJsonArgumentRule],
+    versionData: ClientJson,
+    path: str,
+    options: MinecraftOptions,
+    classpath: str,
+) -> list[str]:
     """
     Returns all arguments from the client.json
     """
@@ -113,7 +141,9 @@ def get_arguments(data: list[str | ClientJsonArgumentRule], versionData: ClientJ
             arglist.append(replace_arguments(i, versionData, path, options, classpath))
         else:
             # Rules might has 2 different names in different client.json
-            if "compatibilityRules" in i and not parse_rule_list(i["compatibilityRules"], options):
+            if "compatibilityRules" in i and not parse_rule_list(
+                i["compatibilityRules"], options
+            ):
                 continue
 
             if "rules" in i and not parse_rule_list(i["rules"], options):
@@ -121,7 +151,9 @@ def get_arguments(data: list[str | ClientJsonArgumentRule], versionData: ClientJ
 
             # Sometimes  i["value"] is the argument
             if isinstance(i["value"], str):
-                arglist.append(replace_arguments(i["value"], versionData, path, options, classpath))
+                arglist.append(
+                    replace_arguments(i["value"], versionData, path, options, classpath)
+                )
             # Sometimes i["value"] is a list of arguments
             else:
                 for v in i["value"]:
@@ -130,7 +162,9 @@ def get_arguments(data: list[str | ClientJsonArgumentRule], versionData: ClientJ
     return arglist
 
 
-def get_minecraft_command(version: str, minecraft_directory: str | os.PathLike, options: MinecraftOptions) -> list[str]:
+def get_minecraft_command(
+    version: str, minecraft_directory: str | os.PathLike, options: MinecraftOptions
+) -> list[str]:
     """
     Returns the command for running minecraft as list. The given command can be executed with subprocess. Use :func:`~minecraft_launcher_lib.utils.get_minecraft_directory` to get the default Minecraft directory.
 
@@ -180,13 +214,19 @@ def get_minecraft_command(version: str, minecraft_directory: str | os.PathLike, 
 
     options = copy.deepcopy(options)
 
-    with open(os.path.join(path, "versions", version, version + ".json"), "r", encoding="utf-8") as f:
+    with open(
+        os.path.join(path, "versions", version, version + ".json"),
+        "r",
+        encoding="utf-8",
+    ) as f:
         data: ClientJson = json.load(f)
 
     if "inheritsFrom" in data:
         data = inherit_json(data, path)
 
-    options["nativesDirectory"] = options.get("nativesDirectory", os.path.join(path, "versions", data["id"], "natives"))
+    options["nativesDirectory"] = options.get(
+        "nativesDirectory", os.path.join(path, "versions", data["id"], "natives")
+    )
     classpath = get_libraries(data, path)
 
     command: list[str] = []
@@ -208,7 +248,9 @@ def get_minecraft_command(version: str, minecraft_directory: str | os.PathLike, 
     # Newer Versions have jvmArguments in client.json
     if isinstance(data.get("arguments", None), dict):
         if "jvm" in data["arguments"]:
-            command = command + get_arguments(data["arguments"]["jvm"], data, path, options, classpath)
+            command = command + get_arguments(
+                data["arguments"]["jvm"], data, path, options, classpath
+            )
         else:
             command.append("-Djava.library.path=" + options["nativesDirectory"])
             command.append("-cp")
@@ -222,8 +264,17 @@ def get_minecraft_command(version: str, minecraft_directory: str | os.PathLike, 
     if options.get("enableLoggingConfig", False):
         if "logging" in data:
             if len(data["logging"]) != 0:
-                logger_file = os.path.join(path, "assets", "log_configs", data["logging"]["client"]["file"]["id"])
-                command.append(data["logging"]["client"]["argument"].replace("${path}", logger_file))
+                logger_file = os.path.join(
+                    path,
+                    "assets",
+                    "log_configs",
+                    data["logging"]["client"]["file"]["id"],
+                )
+                command.append(
+                    data["logging"]["client"]["argument"].replace(
+                        "${path}", logger_file
+                    )
+                )
 
     command.append(data["mainClass"])
 
@@ -231,7 +282,9 @@ def get_minecraft_command(version: str, minecraft_directory: str | os.PathLike, 
         # For older versions
         command = command + get_arguments_string(data, path, options, classpath)
     else:
-        command = command + get_arguments(data["arguments"]["game"], data, path, options, classpath)
+        command = command + get_arguments(
+            data["arguments"]["game"], data, path, options, classpath
+        )
 
     if "server" in options:
         command.append("--server")

@@ -5,7 +5,7 @@
 from .exceptions import FileOutsideMinecraftDirectory, InvalidChecksum, VersionNotFound
 from ._internal_types.shared_types import ClientJson, ClientJsonRule, ClientJsonLibrary
 from ._internal_types.helper_types import RequestsResponseCache, MavenMetadata
-from .types import MinecraftOptions, CallbackDict
+from ._types import MinecraftOptions, CallbackDict
 from typing import Literal, Any
 import subprocess
 import datetime
@@ -36,15 +36,28 @@ def empty(arg: Any) -> None:
     pass
 
 
-def check_path_inside_minecraft_directory(minecraft_directory: str | os.PathLike, path: str | os.PathLike) -> None:
+def check_path_inside_minecraft_directory(
+    minecraft_directory: str | os.PathLike, path: str | os.PathLike
+) -> None:
     """
     Raises a FileOutsideMinecraftDirectory if the Path is not in the given Directory
     """
     if not os.path.abspath(path).startswith(os.path.abspath(minecraft_directory)):
-        raise FileOutsideMinecraftDirectory(os.path.abspath(path), os.path.abspath(minecraft_directory))
+        raise FileOutsideMinecraftDirectory(
+            os.path.abspath(path), os.path.abspath(minecraft_directory)
+        )
 
 
-def download_file(url: str, path: str, callback: CallbackDict = {}, sha1: str | None = None, lzma_compressed: bool | None = False, session: requests.sessions.Session | None = None, minecraft_directory: str | os.PathLike | None = None, overwrite: bool | None = False) -> bool:
+def download_file(
+    url: str,
+    path: str,
+    callback: CallbackDict = {},
+    sha1: str | None = None,
+    lzma_compressed: bool | None = False,
+    session: requests.sessions.Session | None = None,
+    minecraft_directory: str | os.PathLike | None = None,
+    overwrite: bool | None = False,
+) -> bool:
     """
     Downloads a file into the given path. Check sha1 if given.
     """
@@ -73,7 +86,7 @@ def download_file(url: str, path: str, callback: CallbackDict = {}, sha1: str | 
     if r.status_code != 200:
         return False
 
-    with open(path, 'wb') as f:
+    with open(path, "wb") as f:
         r.raw.decode_content = True
         if lzma_compressed:
             f.write(lzma.decompress(r.content))
@@ -99,11 +112,11 @@ def parse_single_rule(rule: ClientJsonRule, options: MinecraftOptions) -> bool:
 
     for os_key, os_value in rule.get("os", {}).items():
         if os_key == "name":
-            if os_value == "windows" and platform.system() != 'Windows':
+            if os_value == "windows" and platform.system() != "Windows":
                 return returnvalue
-            elif os_value == "osx" and platform.system() != 'Darwin':
+            elif os_value == "osx" and platform.system() != "Darwin":
                 return returnvalue
-            elif os_value == "linux" and platform.system() != 'Linux':
+            elif os_value == "linux" and platform.system() != "Linux":
                 return returnvalue
         elif os_key == "arch":
             if os_value == "x86" and platform.architecture()[0] != "32bit":
@@ -113,17 +126,31 @@ def parse_single_rule(rule: ClientJsonRule, options: MinecraftOptions) -> bool:
                 return returnvalue
 
     for features_key in rule.get("features", {}).keys():
-        if features_key == "has_custom_resolution" and not options.get("customResolution", False):
+        if features_key == "has_custom_resolution" and not options.get(
+            "customResolution", False
+        ):
             return returnvalue
         elif features_key == "is_demo_user" and not options.get("demo", False):
             return returnvalue
-        elif features_key == "has_quick_plays_support" and options.get("quickPlayPath") is None:
+        elif (
+            features_key == "has_quick_plays_support"
+            and options.get("quickPlayPath") is None
+        ):
             return returnvalue
-        elif features_key == "is_quick_play_singleplayer" and options.get("quickPlaySingleplayer") is None:
+        elif (
+            features_key == "is_quick_play_singleplayer"
+            and options.get("quickPlaySingleplayer") is None
+        ):
             return returnvalue
-        elif features_key == "is_quick_play_multiplayer" and options.get("quickPlayMultiplayer") is None:
+        elif (
+            features_key == "is_quick_play_multiplayer"
+            and options.get("quickPlayMultiplayer") is None
+        ):
             return returnvalue
-        elif features_key == "is_quick_play_realms" and options.get("quickPlayRealms") is None:
+        elif (
+            features_key == "is_quick_play_realms"
+            and options.get("quickPlayRealms") is None
+        ):
             return returnvalue
 
     return not returnvalue
@@ -155,7 +182,9 @@ def inherit_json(original_data: ClientJson, path: str | os.PathLike) -> ClientJs
     """
     inherit_version = original_data["inheritsFrom"]
 
-    with open(os.path.join(path, "versions", inherit_version, inherit_version + ".json")) as f:
+    with open(
+        os.path.join(path, "versions", inherit_version, inherit_version + ".json")
+    ) as f:
         new_data: ClientJson = json.load(f)
 
     # Inheriting the libs is a bit special
@@ -207,7 +236,9 @@ def get_library_path(name: str, path: str | os.PathLike) -> str:
         fileend = "jar"
 
     # construct a filename with the remaining parts
-    filename = f"{libname}-{version}{''.join(map(lambda p: f'-{p}', parts[3:]))}.{fileend}"
+    filename = (
+        f"{libname}-{version}{''.join(map(lambda p: f'-{p}', parts[3:]))}.{fileend}"
+    )
     libpath = os.path.join(libpath, libname, version, filename)
     return libpath
 
@@ -238,7 +269,7 @@ def get_sha1_hash(path: str) -> str:
     """
     BUF_SIZE = 65536
     sha1 = hashlib.sha1()
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         while True:
             data = f.read(BUF_SIZE)
             if not data:
@@ -272,7 +303,11 @@ def get_user_agent() -> str:
     if _user_agent_cache is not None:
         return _user_agent_cache
     else:
-        with open(os.path.join(os.path.dirname(__file__), "version.txt"), "r", encoding="utf-8") as f:
+        with open(
+            os.path.join(os.path.dirname(__file__), "version.txt"),
+            "r",
+            encoding="utf-8",
+        ) as f:
             _user_agent_cache = "minecraft-launcher-lib/" + f.read().strip()
             return _user_agent_cache
 
@@ -295,12 +330,20 @@ def get_requests_response_cache(url: str) -> requests.models.Response:
     Caches the result of request.get(). If a request was made to the same URL within the last hour, the cache will be used, so you don't need to make a request to a URl each timje you call a function.
     """
     global _requests_response_cache
-    if url not in _requests_response_cache or (datetime.datetime.now() - _requests_response_cache[url]["datetime"]).total_seconds() / 60 / 60 >= 1:
+    if (
+        url not in _requests_response_cache
+        or (
+            datetime.datetime.now() - _requests_response_cache[url]["datetime"]
+        ).total_seconds()
+        / 60
+        / 60
+        >= 1
+    ):
         r = requests.get(url, headers={"user-agent": get_user_agent()})
         if r.status_code == 200:
             _requests_response_cache[url] = {
                 "response": r,
-                "datetime": datetime.datetime.now()
+                "datetime": datetime.datetime.now(),
             }
         return r
     else:
@@ -316,11 +359,16 @@ def parse_maven_metadata(url: str) -> MavenMetadata:
     return {
         "release": re.search("(?<=<release>).*?(?=</release>)", r.text, re.MULTILINE).group(),  # type: ignore
         "latest": re.search("(?<=<latest>).*?(?=</latest>)", r.text, re.MULTILINE).group(),  # type: ignore
-        "versions": re.findall("(?<=<version>).*?(?=</version>)", r.text, re.MULTILINE)
+        "versions": re.findall("(?<=<version>).*?(?=</version>)", r.text, re.MULTILINE),
     }
 
 
-def extract_file_from_zip(handler: zipfile.ZipFile, zip_path: str, extract_path: str, minecraft_directory: str | os.PathLike | None = None) -> None:
+def extract_file_from_zip(
+    handler: zipfile.ZipFile,
+    zip_path: str,
+    extract_path: str,
+    minecraft_directory: str | os.PathLike | None = None,
+) -> None:
     """
     Extract a file from a zip handler into the given path
     """
@@ -349,7 +397,9 @@ def assert_func(expression: bool) -> None:
 
 def get_client_json(version: str, minecraft_directory: str | os.PathLike) -> ClientJson:
     "Load the client.json for the given version"
-    local_path = os.path.join(minecraft_directory, "versions", version, f"{version}.json")
+    local_path = os.path.join(
+        minecraft_directory, "versions", version, f"{version}.json"
+    )
     if os.path.isfile(local_path):
         with open(local_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -359,7 +409,9 @@ def get_client_json(version: str, minecraft_directory: str | os.PathLike) -> Cli
 
         return data
 
-    version_list = get_requests_response_cache("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json").json()
+    version_list = get_requests_response_cache(
+        "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
+    ).json()
     for i in version_list["versions"]:
         if i["id"] == version:
             return get_requests_response_cache(i["url"]).json()
