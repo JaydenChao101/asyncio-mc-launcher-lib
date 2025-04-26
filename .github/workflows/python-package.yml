@@ -37,7 +37,7 @@ jobs:
         # stop the build if there are Python syntax errors or undefined names
         ruff check . --exit-zero --ignore E501
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        ruff check . --exit-zero --max-complexity=10 --max-line-length=127
+        ruff check . --exit-zero -- --max-complexity=10 --max-line-length=127
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
