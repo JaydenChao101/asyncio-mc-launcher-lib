@@ -2,11 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2019-2025 JakobDev <jakobdev@gmx.de> and contributors
 # SPDX-License-Identifier: BSD-2-Clause
 
-from minecraft_launcher_lib.setting import LoggingSetting
-import logging
-
-# 初始化全局 logger，可根据需要自定义名称、级别和格式
-logger = LoggingSetting(level=logging.INFO, enable_console=False).logger
+from .logging_utils import logger
 
 from . import (
     command,
@@ -40,7 +36,7 @@ __all__ = [
     "vanilla_launcher",
     "mrpack",
     "exceptions",
-    "_types.py",
+    "_types",
     "microsoft_types",
     "logger",
 ]
