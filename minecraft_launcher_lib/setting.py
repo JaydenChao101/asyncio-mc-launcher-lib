@@ -1,6 +1,12 @@
 import logging
 
-def setup_logger(name: str = None, level: int = logging.INFO, filename: str = None, enable_console: bool = False) -> logging.Logger:
+
+def setup_logger(
+    name: str = None,
+    level: int = logging.INFO,
+    filename: str = None,
+    enable_console: bool = False,
+) -> logging.Logger:
     """
     設定並返回一個 logger。
 
@@ -14,7 +20,8 @@ def setup_logger(name: str = None, level: int = logging.INFO, filename: str = No
     logger.setLevel(level)
 
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # 添加控制台處理器
