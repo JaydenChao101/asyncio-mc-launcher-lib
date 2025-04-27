@@ -5,6 +5,17 @@
 mrpack allows you to install Modpacks from the `Mrpack Format <https://support.modrinth.com/en/articles/8802351-modrinth-modpack-format-mrpack>`_.
 You should also take a look at the :doc:`complete example </examples/Mrpack>`.
 """
+
+# 標準庫導入
+import zipfile
+import json
+import os
+
+# 第三方庫導入
+import aiohttp
+import aiofiles
+
+# 本地導入
 from ._helper import download_file, empty, check_path_inside_minecraft_directory
 from ._types import MrpackInformation, MrpackInstallOptions, CallbackDict
 from ._internal_types.mrpack_types import MrpackIndex, MrpackFile
@@ -13,11 +24,6 @@ from .forge import install_forge_version
 from .exceptions import VersionNotFound
 from .fabric import install_fabric
 from .quilt import install_quilt
-import aiohttp
-import aiofiles
-import zipfile
-import json
-import os
 
 
 def _filter_mrpack_files(
@@ -166,9 +172,9 @@ async def install_mrpack(
             # Remove the overrides at the start of the Name
             # We don't have removeprefix() in Python 3.8
             if zip_name.startswith("client-overrides/"):
-                file_name = zip_name[len("client-overrides/"):]
+                file_name = zip_name[len("client-overrides/") :]
             else:
-                file_name = zip_name[len("overrides/"):]
+                file_name = zip_name[len("overrides/") :]
 
             # Constructs the full Path
             full_path = os.path.abspath(os.path.join(modpack_directory, file_name))
@@ -280,19 +286,18 @@ async def get_mrpack_launch_version(path: str | os.PathLike) -> str:
                     + "-forge-"
                     + index["dependencies"]["forge"]
                 )
-            elif "fabric-loader" in index["dependencies"]:
+            if "fabric-loader" in index["dependencies"]:
                 return (
                     "fabric-loader-"
                     + index["dependencies"]["fabric-loader"]
                     + "-"
                     + index["dependencies"]["minecraft"]
                 )
-            elif "quilt-loader" in index["dependencies"]:
+            if "quilt-loader" in index["dependencies"]:
                 return (
                     "quilt-loader-"
                     + index["dependencies"]["quilt-loader"]
                     + "-"
                     + index["dependencies"]["minecraft"]
                 )
-            else:
-                return index["dependencies"]["minecraft"]
+            return index["dependencies"]["minecraft"]

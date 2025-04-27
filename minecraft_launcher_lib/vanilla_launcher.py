@@ -9,7 +9,6 @@ from ._internal_types.vanilla_launcher_types import (
 from ._types import VanillaLauncherProfile, MinecraftOptions
 from .exceptions import InvalidVanillaLauncherProfile
 from .utils import get_latest_version
-from ._helper import assert_func
 import datetime
 import aiofiles
 import json
@@ -29,9 +28,11 @@ async def _is_vanilla_launcher_profile_valid(
     vanilla_profile: VanillaLauncherProfile,
 ) -> bool:
     "Checks if the given profile is valid"
+    # 名稱必須是字符串
     if not isinstance(vanilla_profile.get("name"), str):
         return False
 
+    # 版本類型檢查
     if vanilla_profile.get("versionType") not in (
         "latest-release",
         "latest-snapshot",
@@ -39,38 +40,71 @@ async def _is_vanilla_launcher_profile_valid(
     ):
         return False
 
+    # custom 類型必須有 version
     if (
         vanilla_profile["versionType"] == "custom"
         and vanilla_profile.get("version") is None
     ):
         return False
 
+    # 檢查 gameDirectory 類型
     if vanilla_profile.get("gameDirectory") is not None and not isinstance(
         vanilla_profile.get("gameDirectory"), str
     ):
         return False
 
+    # 檢查 javaExecutable 類型
     if vanilla_profile.get("javaExecutable") is not None and not isinstance(
         vanilla_profile.get("javaExecutable"), str
     ):
         return False
 
-    if (java_arguments := vanilla_profile.get("javaArguments")) is not None:
-        try:
-            for i in java_arguments:
-                assert_func(isinstance(i, str))
-        except Exception:
+    # 檢查 javaArguments
+    java_arguments = vanilla_profile.get("javaArguments")
+    if java_arguments is not None:
+        if not all(isinstance(arg, str) for arg in java_arguments):
             return False
 
-    if (custom_resolution := vanilla_profile.get("customResolution")) is not None:
+    # 檢查自定義分辨率
+    custom_resolution = vanilla_profile.get("customResolution")
+    if custom_resolution is not None:
         try:
-            assert_func(len(custom_resolution) == 2)
-            assert_func(isinstance(custom_resolution["height"], int))
-            assert_func(isinstance(custom_resolution["width"], int))
+            if len(custom_resolution) != 2:
+                return False
+            if not isinstance(custom_resolution["height"], int):
+                return False
+            if not isinstance(custom_resolution["width"], int):
+                return False
         except Exception:
             return False
 
     return True
+
+
+async def _read_launcher_profiles_json(
+    minecraft_directory: str | os.PathLike,
+) -> VanillaLauncherProfilesJson:
+    """讀取 launcher_profiles.json 文件"""
+    async with aiofiles.open(
+        os.path.join(minecraft_directory, "launcher_profiles.json"),
+        "r",
+        encoding="utf-8",
+    ) as f:
+        data_text = await f.read()
+        return json.loads(data_text)
+
+
+async def _write_launcher_profiles_json(
+    minecraft_directory: str | os.PathLike,
+    data: VanillaLauncherProfilesJson,
+) -> None:
+    """寫入 launcher_profiles.json 文件"""
+    async with aiofiles.open(
+        os.path.join(minecraft_directory, "launcher_profiles.json"),
+        "w",
+        encoding="utf-8",
+    ) as f:
+        await f.write(json.dumps(data, ensure_ascii=False, indent=4))
 
 
 async def load_vanilla_launcher_profiles(
@@ -82,45 +116,45 @@ async def load_vanilla_launcher_profiles(
     :param minecraft_directory: The Minecraft directory
     :return: A List with the Profiles
     """
-    async with aiofiles.open(
-        os.path.join(minecraft_directory, "launcher_profiles.json"),
-        "r",
-        encoding="utf-8",
-    ) as f:
-        data_text = await f.read()
-        data: VanillaLauncherProfilesJson = json.loads(data_text)
+    data = await _read_launcher_profiles_json(minecraft_directory)
 
     profile_list: list[VanillaLauncherProfile] = []
     for value in data["profiles"].values():
         vanilla_profile: VanillaLauncherProfile = {}
 
-        match value["type"]:
-            case "latest-release":
-                vanilla_profile["name"] = "Latest release"
-            case "latest-snapshot":
-                vanilla_profile["name"] = "Latest snapshot"
-            case _:
-                vanilla_profile["name"] = value["name"]
+        # 根據類型設置名稱
+        vanilla_profile["name"] = (
+            "Latest release"
+            if value["type"] == "latest-release"
+            else (
+                "Latest snapshot"
+                if value["type"] == "latest-snapshot"
+                else value["name"]
+            )
+        )
 
-        match value["lastVersionId"]:
-            case "latest-release":
-                vanilla_profile["versionType"] = "latest-release"
-                vanilla_profile["version"] = None
-            case "latest-snapshot":
-                vanilla_profile["versionType"] = "latest-snapshot"
-                vanilla_profile["version"] = None
-            case _:
-                vanilla_profile["versionType"] = "custom"
-                vanilla_profile["version"] = value["lastVersionId"]
+        # 設置版本類型和版本
+        version_id = value["lastVersionId"]
+        if version_id == "latest-release":
+            vanilla_profile["versionType"] = "latest-release"
+            vanilla_profile["version"] = None
+        elif version_id == "latest-snapshot":
+            vanilla_profile["versionType"] = "latest-snapshot"
+            vanilla_profile["version"] = None
+        else:
+            vanilla_profile["versionType"] = "custom"
+            vanilla_profile["version"] = version_id
 
+        # 設置額外屬性
         vanilla_profile["gameDirectory"] = value.get("gameDir")
         vanilla_profile["javaExecutable"] = value.get("javaDir")
 
-        if "javaArgs" in value:
-            vanilla_profile["javaArguments"] = value["javaArgs"].split(" ")
-        else:
-            vanilla_profile["javaArguments"] = None
+        # 處理 Java 參數
+        vanilla_profile["javaArguments"] = (
+            value["javaArgs"].split(" ") if "javaArgs" in value else None
+        )
 
+        # 處理分辨率
         if "resolution" in value:
             vanilla_profile["customResolution"] = {
                 "height": value["resolution"]["height"],
@@ -150,6 +184,7 @@ async def vanilla_launcher_profile_to_minecraft_options(
 
     options: MinecraftOptions = {}
 
+    # 只在值非 None 時添加到 options 字典中
     if (game_directory := vanilla_profile.get("gameDirectory")) is not None:
         options["gameDirectory"] = game_directory
 
@@ -181,11 +216,12 @@ async def get_vanilla_launcher_profile_version(
     if not await _is_vanilla_launcher_profile_valid(vanilla_profile):
         raise InvalidVanillaLauncherProfile(vanilla_profile)
 
-    if vanilla_profile["versionType"] == "latest-release":
+    version_type = vanilla_profile["versionType"]
+    if version_type == "latest-release":
         return get_latest_version()["release"]
-    elif vanilla_profile["versionType"] == "latest-snapshot":
+    elif version_type == "latest-snapshot":
         return get_latest_version()["snapshot"]
-    elif vanilla_profile["versionType"] == "custom":
+    else:  # custom
         return vanilla_profile["version"]  # type: ignore
 
 
@@ -202,25 +238,23 @@ async def add_vanilla_launcher_profile(
     if not await _is_vanilla_launcher_profile_valid(vanilla_profile):
         raise InvalidVanillaLauncherProfile(vanilla_profile)
 
-    async with aiofiles.open(
-        os.path.join(minecraft_directory, "launcher_profiles.json"),
-        "r",
-        encoding="utf-8",
-    ) as f:
-        data_text = await f.read()
-        data: VanillaLauncherProfilesJson = json.loads(data_text)
+    data = await _read_launcher_profiles_json(minecraft_directory)
 
-    new_profile: VanillaLauncherProfilesJsonProfile = {}
-    new_profile["name"] = vanilla_profile["name"]
+    new_profile: VanillaLauncherProfilesJsonProfile = {
+        "name": vanilla_profile["name"],
+        "created": datetime.datetime.now().isoformat(),
+        "lastUsed": datetime.datetime.now().isoformat(),
+        "type": "custom",
+    }
 
-    if vanilla_profile["versionType"] == "latest-release":
-        new_profile["lastVersionId"] = "latest-release"
-    elif vanilla_profile["versionType"] == "latest-snapshot":
-        new_profile["lastVersionId"] = "latest-snapshot"
-    elif vanilla_profile["versionType"] == "custom":
-        # _is_vanilla_launcher_profile_valid() ensures that version is not None, when versionType is set to custom, so we can ignore the mypy error here
+    # 根據版本類型設置 lastVersionId
+    version_type = vanilla_profile["versionType"]
+    if version_type in ("latest-release", "latest-snapshot"):
+        new_profile["lastVersionId"] = version_type
+    else:  # custom
         new_profile["lastVersionId"] = vanilla_profile["version"]  # type: ignore
 
+    # 設置可選參數
     if (game_directory := vanilla_profile.get("gameDirectory")) is not None:
         new_profile["gameDir"] = game_directory
 
@@ -236,27 +270,17 @@ async def add_vanilla_launcher_profile(
             "width": custom_resolution["width"],
         }
 
-    new_profile["created"] = datetime.datetime.now().isoformat()
-    new_profile["lastUsed"] = datetime.datetime.now().isoformat()
-    new_profile["type"] = "custom"
-
-    # Generate a Key for the Profile
-    while True:
+    # 生成唯一的 key
+    key = str(uuid.uuid4())
+    while key in data["profiles"]:
         key = str(uuid.uuid4())
-        if key not in data["profiles"]:
-            break
 
     data["profiles"][key] = new_profile
 
-    async with aiofiles.open(
-        os.path.join(minecraft_directory, "launcher_profiles.json"),
-        "w",
-        encoding="utf-8",
-    ) as f:
-        await f.write(json.dumps(data, ensure_ascii=False, indent=4))
+    await _write_launcher_profiles_json(minecraft_directory, data)
 
 
-async def do_vanilla_launcher_profiles_exists(
+def do_vanilla_launcher_profiles_exists(
     minecraft_directory: str | os.PathLike,
 ) -> bool:
     """
