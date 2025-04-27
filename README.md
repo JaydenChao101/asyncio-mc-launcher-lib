@@ -1,82 +1,105 @@
 # minecraft-launcher-lib
+> [中文說明請見 README-Chinese.md](./README-Chinese.md)
 
-![PyPI](https://img.shields.io/pypi/v/minecraft-launcher-lib)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/minecraft-launcher-lib)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/minecraft-launcher-lib)
-![PyPI - License](https://img.shields.io/pypi/l/minecraft-launcher-lib)
-![PyPI - Implementation](https://img.shields.io/pypi/implementation/minecraft-launcher-lib)
-![Read the Docs](https://img.shields.io/readthedocs/minecraft-launcher-lib)
+[![Test](https://github.com/JaydenChao101/asyncio-mc-launcher-lib/actions/workflows/test.yml/badge.svg)](https://github.com/JaydenChao101/asyncio-mc-launcher-lib/actions/workflows/test.yml)
+[![Build Python Package](https://github.com/JaydenChao101/asyncio-mc-launcher-lib/actions/workflows/uv_build.yaml/badge.svg)](https://github.com/JaydenChao101/asyncio-mc-launcher-lib/actions/workflows/uv_build.yaml)
 
-A Python library for creating a custom minecraft launcher. This library containts functions to install and execute minecraft and interacting with mojang accounts.
+> This project is a fork of [JakobDev/minecraft-launcher-lib](https://codeberg.org/JakobDev/minecraft-launcher-lib).
 
-```python
-import minecraft_launcher_lib
-import subprocess
-import sys
+A Python library for building custom Minecraft launchers. Supports installing, launching Minecraft, and interacting with Mojang/Microsoft accounts.
 
-# Set the data for your Azure Application here. For more information look at the documentation.
-CLIENT_ID = "YOUR CLIENT ID"
-REDIRECT_URL = "YOUR REDIRECT URL"
+## Features
 
-# Get latest version
-latest_version = minecraft_launcher_lib.utils.get_latest_version()["release"]
+- Easy installation
+- Generate Minecraft launch commands
+- Microsoft account login support
+- Supports [Forge](https://minecraftforge.net), [Fabric](https://fabricmc.net), [Quilt](https://quiltmc.org), and Liteloader
+- Supports alpha/beta and legacy versions
+- All functions are type-annotated and documented
+- Only depends on [requests](https://pypi.org/project/requests)
+- [PyPy](https://www.pypy.org) support
+- Full online documentation and tutorials
+- Vanilla launcher profiles read/write support
+- [mrpack modpacks](https://docs.modrinth.com/docs/modpacks/format_definition) support
+- All public APIs are statically typed
+- Rich examples
+- Open source
 
-# Get Minecraft directory
-minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
+## Installation
 
-# Make sure, the latest version of Minecraft is installed
-minecraft_launcher_lib.install.install_minecraft_version(latest_version, minecraft_directory)
-
-# Login
-login_url, state, code_verifier = minecraft_launcher_lib.microsoft_account.get_secure_login_data(CLIENT_ID, REDIRECT_URL)
-print(f"Please open {login_url} in your browser and copy the url you are redirected into the prompt below.")
-code_url = input()
-
-# Get the code from the url
-try:
-    auth_code = minecraft_launcher_lib.microsoft_account.parse_auth_code_url(code_url, state)
-except AssertionError:
-    print("States do not match!")
-    sys.exit(1)
-except KeyError:
-    print("Url not valid")
-    sys.exit(1)
-
-# Get the login data
-login_data = minecraft_launcher_lib.microsoft_account.complete_login(CLIENT_ID, None, REDIRECT_URL, auth_code, code_verifier)
-
-# Get Minecraft command
-options = {
-    "username": login_data["name"],
-    "uuid": login_data["id"],
-    "token": login_data["access_token"]
-}
-minecraft_command = minecraft_launcher_lib.command.get_minecraft_command(latest_version, minecraft_directory, options)
-
-# Start Minecraft
-subprocess.run(minecraft_command, cwd=minecraft_directory)
+Using pip:
+```bash
+pip install minecraft-launcher-lib
 ```
 
-Features:
-- Easy installing
-- Get command to run Minecraft
-- Login to Microsoft account
-- Supports [Forge](https://minecraftforge.net), [Fabric](https://fabricmc.net), [Quilt](https://quiltmc.org) and Liteloader
-- Old versions like alpha or beta supported
-- All functions have type annotations and docstrings
-- Only depents on [requests](https://pypi.org/project/requests)
-- Supports [PyPy](https://www.pypy.org)
-- Full Documention with tutorial online available
-- Supports reading and writing profiles of the Vanilla Launcher
-- Install of [mrpack modpacks](https://docs.modrinth.com/docs/modpacks/format_definition)
-- All public APIs are static typed
-- Examples available
-- OpenSource
+Or using uv (recommended for faster installation):
+```bash
+uv pip install minecraft-launcher-lib
+```
 
-[View more examples](https://codeberg.org/JakobDev/minecraft-launcher-lib/src/branch/master/examples)
+## Microsoft Account Login Example
 
-[Read the documentation](https://minecraft-launcher-lib.readthedocs.io)
+```python
+import logging
+from minecraft_launcher_lib import microsoft_account
+import asyncio
+from minecraft_launcher_lib.setting import setup_logger
 
-[Thanks to tomsik68 who documented how a minecraft launcher works](https://github.com/tomsik68/mclauncher-api/wiki)
+logger = setup_logger(enable_console=True, level=logging.INFO, filename="microsoft_account.log")
 
-[Buy me a coffe](https://ko-fi.com/jakobdev)
+async def login_microsoft_account():
+    login_url = await microsoft_account.get_login_url()
+    print(f"Please open {login_url} in your browser and copy the URL you are redirected into the prompt below.")
+    code_url = input()
+    code = await microsoft_account.extract_code_from_url(code_url)
+    auth_code = await microsoft_account.get_ms_token(code)
+    xbl_token = await microsoft_account.get_xbl_token(auth_code["access_token"])
+    xsts_token = await microsoft_account.get_xsts_token(xbl_token["Token"])
+    uhs = xbl_token["DisplayClaims"]["xui"][0]["uhs"]
+    mc_token = await microsoft_account.get_minecraft_access_token(xsts_token["Token"], uhs)
+    await microsoft_account.have_minecraft(mc_token["access_token"])
+    login_data = {
+        "access_token": mc_token["access_token"],
+        "refresh_token": auth_code["refresh_token"],
+        "expires_in": auth_code["expires_in"],
+        "uhs": uhs,
+        "xsts_token": xsts_token["Token"],
+        "xbl_token": xbl_token["Token"]
+    }
+    return login_data["access_token"]
+
+if __name__ == "__main__":
+    access_token = asyncio.run(login_microsoft_account())
+    print(f"Access token: {access_token}")
+```
+
+## Documentation & More Examples
+
+- [Online Documentation](https://minecraft-launcher-lib.readthedocs.io)
+- [More Examples](https://codeberg.org/JakobDev/minecraft-launcher-lib/src/branch/master/examples)
+
+## Comparison: This Fork vs. [JakobDev/minecraft-launcher-lib](https://codeberg.org/JakobDev/minecraft-launcher-lib)
+
+| Feature/Design           | This Fork                                             | JakobDev Original                                 |
+|-------------------------|-------------------------------------------------------|---------------------------------------------------|
+| Python Version Support  | 3.10+, more complete type annotations                 | 3.7+, partial type annotations                    |
+| Logging System          | Built-in `setup_logger`, file & console output        | No built-in logging, user must implement          |
+| Microsoft Login Flow    | Example & API fully async/await                       | Mixed sync/async                                  |
+| Dependencies            | aiofiles, aiohttp, requests, requests-mock            | requests                                          |
+| Test Coverage           | Added requests-mock for easier unit testing           | Fewer tests                                       |
+| Documentation           | Primarily in Chinese, tailored for TW/Chinese users   | English                                           |
+| Branch Strategy         | main/dev auto-sync (GitHub Actions)                   | Single main branch                                |
+| Version Management      | Dynamic from `version.txt`                            | Manually in setup.py                              |
+| Others                  | Optimized for async/await and type annotations        | Focus on broad compatibility                      |
+
+> Please refer to both the original and this fork to choose the version that best fits your needs!
+
+## Contributing
+
+PRs and issues are welcome!
+
+## Acknowledgements
+
+Thanks to [tomsik68](https://github.com/tomsik68/mclauncher-api/wiki) for documenting Minecraft launcher internals.
+
+Thanks to [JakobDev](https://github.com/JakobDev) for the original code (BSD-2).

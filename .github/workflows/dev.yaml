@@ -1,0 +1,23 @@
+name: Sync Main to Dev
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v2
+        with:
+          ref: main
+
+      - name: Push changes to dev branch
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git checkout dev
+          git merge main --no-ff -m "Sync changes from main to dev"
+          git push origin dev
