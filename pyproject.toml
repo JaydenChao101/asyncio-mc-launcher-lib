@@ -8,9 +8,9 @@ description = "A library for creating a custom Minecraft launcher"
 readme = "README.md"
 requires-python = ">=3.10"
 keywords = ["JakobDev", "Minecraft", "Mojang", "launcher", "minecraft-launcher", "java"]
-license = { text = "BSD-2-Clause" }
+license = "BSD-2-Clause"
 authors = [
-  { name = "JakobDev", email = "jakobdev@gmx.de" }
+  { name = "JaydenChao101", email = "jaydenchao@proton.me" }
 ]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -43,11 +43,8 @@ dependencies = [
 dynamic = ["version"]
 
 [project.urls]
-Documentation = "https://minecraft-launcher-lib.readthedocs.io/en/stable/index.html"
-Issues = "https://codeberg.org/JakobDev/minecraft-launcher-lib/issues"
-Source = "https://codeberg.org/JakobDev/minecraft-launcher-lib"
-Changelog = "https://minecraft-launcher-lib.readthedocs.io/en/stable/changelog.html"
-Donation = "https://ko-fi.com/jakobdev"
+Issues = "https://github.com/JaydenChao101/asyncio-mc-launcher-lib/issues"
+Source = "https://github.com/JaydenChao101/asyncio-mc-launcher-lib"
 
 [tool.setuptools.dynamic]
 version = { file = "minecraft_launcher_lib/version.txt" }
