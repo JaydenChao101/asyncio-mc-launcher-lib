@@ -22,7 +22,7 @@ class VersionNotFound(ValueError):
 
 class UnsupportedVersion(ValueError):
     """
-    This Exception is raised when you try to run :func:`~minecraft_launcher_lib.fabric.install_fabric` or :func:`~minecraft_launcher_lib.quilt.install_quilt` with a unsupported version
+    This Exception is raised when you try to run :func:`~launcher_corefabric.install_fabric` or :func:`~launcher_corequilt.install_quilt` with a unsupported version
     """
 
     def __init__(self, version: str) -> None:
@@ -53,7 +53,7 @@ class ExternalProgramError(Exception):
 
 class InvalidRefreshToken(ValueError):
     """
-    Raised when :func:`~minecraft_launcher_lib.microsoft_account.complete_refresh` is called with a invalid refresh token
+    Raised when :func:`~launcher_coremicrosoft_account.complete_refresh` is called with a invalid refresh token
     """
 
     pass
@@ -153,7 +153,7 @@ class PlatformNotSupported(Exception):
 
 class AccountNotOwnMinecraft(Exception):
     """
-    Raised by :func:`~minecraft_launcher_lib.microsoft_account.complete_login` and :func:`~minecraft_launcher_lib.microsoft_account.complete_login` when the Account does not own Minecraft
+    Raised by :func:`~launcher_coremicrosoft_account.complete_login` and :func:`~launcher_coremicrosoft_account.complete_login` when the Account does not own Minecraft
     """
 
     def __init__(self) -> None:

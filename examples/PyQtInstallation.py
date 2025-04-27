@@ -2,7 +2,7 @@
 # This example shows how to install Minecraft with a ProgressBar in PyQt
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QComboBox, QLineEdit, QPushButton, QProgressBar, QFileDialog, QFormLayout, QHBoxLayout, QVBoxLayout
 from PyQt6.QtCore import QThread, pyqtSignal
-import minecraft_launcher_lib
+import launcher_core
 import sys
 
 
@@ -24,7 +24,7 @@ class InstallThread(QThread):
         self._directory = directory
 
     def run(self) -> None:
-        minecraft_launcher_lib.install.install_minecraft_version(self._version, self._directory, callback=self._callback_dict)
+        launcher_core.install.install_minecraft_version(self._version, self._directory, callback=self._callback_dict)
 
 
 class Window(QWidget):
@@ -40,10 +40,10 @@ class Window(QWidget):
         self._install_single_thread_button = QPushButton("Install Single Thread")
         self._install_multi_thread_button = QPushButton("Install Multi Thread")
 
-        for i in minecraft_launcher_lib.utils.get_version_list():
+        for i in launcher_core.utils.get_version_list():
             self._version_combo_box.addItem(i["id"])
 
-        self._path_edit.setText(minecraft_launcher_lib.utils.get_minecraft_directory())
+        self._path_edit.setText(launcher_core.utils.get_minecraft_directory())
 
         self._progress_bar.setTextVisible(True)
 
@@ -95,7 +95,7 @@ class Window(QWidget):
             "setMax": lambda maximum: self._progress_bar.setMaximum(maximum)
         }
 
-        minecraft_launcher_lib.install.install_minecraft_version(self._version_combo_box.currentText(), self._path_edit.text(), callback=callback)
+        launcher_core.install.install_minecraft_version(self._version_combo_box.currentText(), self._path_edit.text(), callback=callback)
 
     def _install_minecraft_multi_thread(self) -> None:
         # This functions installs Minecraft on a other Thread than the GUI

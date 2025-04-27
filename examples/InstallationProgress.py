@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This example shows how to show the progress of installation to the user.
-import minecraft_launcher_lib
+import launcher_core
 
 
 # Taken from https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
@@ -40,10 +40,10 @@ def main():
         "setMax": lambda value: maximum(max_value, value)
     }
 
-    version = minecraft_launcher_lib.utils.get_latest_version()["release"]
-    directory = minecraft_launcher_lib.utils.get_minecraft_directory()
+    version = launcher_core.utils.get_latest_version()["release"]
+    directory = launcher_core.utils.get_minecraft_directory()
 
-    minecraft_launcher_lib.install.install_minecraft_version(version, directory, callback=callback)
+    launcher_core.install.install_minecraft_version(version, directory, callback=callback)
 
 
 if __name__ == "__main__":

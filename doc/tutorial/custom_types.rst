@@ -20,7 +20,7 @@ This type definition is just there to help your IDE. The function itself returns
 
 .. code:: python
 
-    version_list = minecraft_launcher_lib.utils.get_version_list()
+    version_list = launcher_coreutils.get_version_list()
     print(version_list[0]["id"])
 
     print(type(version_list[0]))
@@ -35,7 +35,7 @@ You can even use it when you are calling a function:
 
     import minecraft_launcher_lib
 
-    options: minecraft_launcher_lib._types.MinecraftOptions = {}
+    options: launcher_core_types.MinecraftOptions = {}
     options["username"] = "Test123"
 
 When using a IDE, you will see that it will start autocompleting the keys of the Dict while writing.

@@ -1,7 +1,7 @@
 # This file is part of minecraft-launcher-lib (https://codeberg.org/JakobDev/minecraft-launcher-lib)
 # SPDX-FileCopyrightText: Copyright (c) 2019-2025 JakobDev <jakobdev@gmx.de> and contributors
 # SPDX-License-Identifier: BSD-2-Clause
-"runtime allows to install the java runtime. This module is used by :func:`~minecraft_launcher_lib.install.install_minecraft_version`, so you don't need to use it in your code most of the time."
+"runtime allows to install the java runtime. This module is used by :func:`~launcher_coreinstall.install_minecraft_version`, so you don't need to use it in your code most of the time."
 from ._helper import (
     get_user_agent,
     download_file,
@@ -60,7 +60,7 @@ async def get_jvm_runtimes() -> list[str]:
 
     .. code:: python
 
-        async for runtime in await minecraft_launcher_lib.runtime.get_jvm_runtimes():
+        async for runtime in await launcher_coreruntime.get_jvm_runtimes():
             print(runtime)
     """
     async with aiohttp.ClientSession() as session:
@@ -85,7 +85,7 @@ async def get_installed_jvm_runtimes(
 
     .. code:: python
 
-        for runtime in await minecraft_launcher_lib.runtime.get_installed_jvm_runtimes():
+        for runtime in await launcher_coreruntime.get_installed_jvm_runtimes():
             print(runtime)
 
     :param minecraft_directory: The path to your Minecraft directory
@@ -110,12 +110,12 @@ async def install_jvm_runtime(
     .. code:: python
 
         runtime_version = "java-runtime-gamma"
-        minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
-        await minecraft_launcher_lib.runtime.install_jvm_runtime(runtime_version, minecraft_directory)
+        minecraft_directory = launcher_coreutils.get_minecraft_directory()
+        await launcher_coreruntime.install_jvm_runtime(runtime_version, minecraft_directory)
 
     :param jvm_version: The Name of the JVM version
     :param minecraft_directory: The path to your Minecraft directory
-    :param callback: the same dict as for :func:`~minecraft_launcher_lib.install.install_minecraft_version`
+    :param callback: the same dict as for :func:`~launcher_coreinstall.install_minecraft_version`
     :param max_concurrency: number of concurrent tasks for asynchronous downloads. If None, it will be set automatically.
     :raises VersionNotFound: The given JVM Version was not found
     :raises FileOutsideMinecraftDirectory: A File should be placed outside the given Minecraft directory
@@ -251,8 +251,8 @@ async def get_executable_path(
     .. code:: python
 
         runtime_version = "java-runtime-gamma"
-        minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
-        executable_path = await minecraft_launcher_lib.runtime.get_executable_path(runtime_version, minecraft_directory)
+        minecraft_directory = launcher_coreutils.get_minecraft_directory()
+        executable_path = await launcher_coreruntime.get_executable_path(runtime_version, minecraft_directory)
         if executable_path is not None:
             print(f"Executable path: {executable_path}")
         else:
@@ -293,7 +293,7 @@ async def get_jvm_runtime_information(jvm_version: str) -> JvmRuntimeInformation
     .. code:: python
 
         runtime_version = "java-runtime-gamma"
-        information = await minecraft_launcher_lib.runtime.get_jvm_runtime_information(runtime_version)
+        information = await launcher_coreruntime.get_jvm_runtime_information(runtime_version)
         print("Java version: " + information["name"])
         print("Release date: " + information["released"].isoformat())
 
@@ -336,8 +336,8 @@ async def get_version_runtime_information(
     .. code:: python
 
         minecraft_version = "1.20"
-        minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
-        information = await minecraft_launcher_lib.runtime.get_version_runtime_information(minecraft_version, minecraft_directory)
+        minecraft_directory = launcher_coreutils.get_minecraft_directory()
+        information = await launcher_coreruntime.get_version_runtime_information(minecraft_version, minecraft_directory)
         print("Name: " + information["name"])
         print("Java version: " + str(information["javaMajorVersion"]))
 

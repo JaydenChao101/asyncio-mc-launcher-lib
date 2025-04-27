@@ -20,15 +20,15 @@ Changelog
 -------------------------
 6.5
 -------------------------
-- Add :func:`~minecraft_launcher_lib.runtime.get_version_runtime_information`
-- Fix :func:`~minecraft_launcher_lib.natives.extract_natives` for newer versions
+- Add :func:`~launcher_coreruntime.get_version_runtime_information`
+- Fix :func:`~launcher_corenatives.extract_natives` for newer versions
 - Fix installation of Forge 1.20.4
 - Add examples to documentation
 
 -------------------------
 6.4
 -------------------------
-- Added :class:`~minecraft_launcher_lib.exceptions.AccountNotOwnMinecraft` exception
+- Added :class:`~launcher_coreexceptions.AccountNotOwnMinecraft` exception
 
 -------------------------
 6.3
@@ -44,8 +44,8 @@ Changelog
 -------------------------
 6.1
 -------------------------
-- Added :class:`~minecraft_launcher_lib.exceptions.AzureAppNotPermitted` exception
-- Added :func:`~minecraft_launcher_lib.utils.is_minecraft_installed`
+- Added :class:`~launcher_coreexceptions.AzureAppNotPermitted` exception
+- Added :func:`~launcher_coreutils.is_minecraft_installed`
 - Added callbacks to the :doc:`/modules/mrpack` module
 - Fix some Bugs
 
@@ -55,8 +55,8 @@ Changelog
 - Added :doc:`/modules/vanilla_launcher` module
 - Added :doc:`/modules/mrpack` module
 - Added :doc:`/modules/quilt` module
-- Added :func:`~minecraft_launcher_lib.runtime.get_jvm_runtime_information`
-- Added :class:`~minecraft_launcher_lib.exceptions.InvalidChecksum` exception
+- Added :func:`~launcher_coreruntime.get_jvm_runtime_information`
+- Added :class:`~launcher_coreexceptions.InvalidChecksum` exception
 - Remove account module (deprecated since 4.4 which was released 2022-02-16)
 - Move module documentation into Code
 - Change account type to msa

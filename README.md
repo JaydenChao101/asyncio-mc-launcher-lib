@@ -41,9 +41,9 @@ uv pip install minecraft-launcher-lib
 
 ```python
 import logging
-from minecraft_launcher_lib import microsoft_account
+from launcher_core import microsoft_account
 import asyncio
-from minecraft_launcher_lib.setting import setup_logger
+from launcher_coresetting import setup_logger
 
 logger = setup_logger(enable_console=True, level=logging.INFO, filename="microsoft_account.log")
 

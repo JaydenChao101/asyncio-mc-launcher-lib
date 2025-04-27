@@ -57,7 +57,7 @@ async def get_mrpack_information(path: str | os.PathLike) -> MrpackInformation:
     .. code:: python
 
         path = "/path/to/mrpack"
-        information = await minecraft_launcher_lib.mrpack.get_mrpack_information(path)
+        information = await launcher_coremrpack.get_mrpack_information(path)
         print("Name: " + information["name"])
         print("Summary: " + information["summary"])
 
@@ -113,12 +113,12 @@ async def install_mrpack(
 
         path = "/path/to/mrpack"
         minecraft_directory = minecraft_directory.utils.get_minecraft_directory()
-        await minecraft_launcher_lib.mrpack.install_mrpack(path, minecraft_directory)
+        await launcher_coremrpack.install_mrpack(path, minecraft_directory)
 
     :param path: The Path the the .mrpack file
     :param minecraft_directory: he path to your Minecraft directory
     :param modpack_directory: If you want to install the Pack in another Directory than your Minecraft directory, set it here.
-    :param callback: The same dict as for :func:`~minecraft_launcher_lib.install.install_minecraft_version`
+    :param callback: The same dict as for :func:`~launcher_coreinstall.install_minecraft_version`
     :param mrpack_install_options: Some Options to install the Pack (see below)
     :raises FileOutsideMinecraftDirectory: A File should be placed outside the given Minecraft directory
     """
@@ -263,14 +263,14 @@ async def install_mrpack(
 
 async def get_mrpack_launch_version(path: str | os.PathLike) -> str:
     """
-    Returns that Version that needs to be used with :func:`~minecraft_launcher_lib.command.get_minecraft_command`.
+    Returns that Version that needs to be used with :func:`~launcher_corecommand.get_minecraft_command`.
 
     Example:
 
     .. code:: python
 
         path = "/path/to/mrpack"
-        print("Launch version: " + await minecraft_launcher_lib.mrpack.get_mrpack_launch_version(path))
+        print("Launch version: " + await launcher_coremrpack.get_mrpack_launch_version(path))
 
     :param path: The Path the the .mrpack file
     :return: The version

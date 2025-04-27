@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEngineProfile
 from PyQt6.QtCore import QUrl, QLocale
-import minecraft_launcher_lib
+import launcher_core
 import json
 import sys
 import os
@@ -29,14 +29,14 @@ class LoginWindow(QWebEngineView):
                 refresh_token = json.load(f)
                 # Do the login with refresh token
                 try:
-                    account_informaton = minecraft_launcher_lib.microsoft_account.complete_refresh(CLIENT_ID, None, REDIRECT_URL, refresh_token)
+                    account_informaton = launcher_core.microsoft_account.complete_refresh(CLIENT_ID, None, REDIRECT_URL, refresh_token)
                     self.show_account_information(account_informaton)
                 # Show the window if the refresh token is invalid
-                except minecraft_launcher_lib.exceptions.InvalidRefreshToken:
+                except launcher_core.exceptions.InvalidRefreshToken:
                     pass
 
         # Open the login url
-        login_url, self.state, self.code_verifier = minecraft_launcher_lib.microsoft_account.get_secure_login_data(CLIENT_ID, REDIRECT_URL)
+        login_url, self.state, self.code_verifier = launcher_core.microsoft_account.get_secure_login_data(CLIENT_ID, REDIRECT_URL)
         self.load(QUrl(login_url))
 
         # Connects a function that is called when the url changed
@@ -47,9 +47,9 @@ class LoginWindow(QWebEngineView):
     def new_url(self, url: QUrl):
         try:
             # Get the code from the url
-            auth_code = minecraft_launcher_lib.microsoft_account.parse_auth_code_url(url.toString(), self.state)
+            auth_code = launcher_core.microsoft_account.parse_auth_code_url(url.toString(), self.state)
             # Do the login
-            account_information = minecraft_launcher_lib.microsoft_account.complete_login(CLIENT_ID, None, REDIRECT_URL, auth_code, self.code_verifier)
+            account_information = launcher_core.microsoft_account.complete_login(CLIENT_ID, None, REDIRECT_URL, auth_code, self.code_verifier)
             # Show the login information
             self.show_account_information(account_information)
         except AssertionError:

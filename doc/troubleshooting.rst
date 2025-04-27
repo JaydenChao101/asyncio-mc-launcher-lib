@@ -8,7 +8,7 @@ Here is a quick checklist for you, if Minecraft doesn't starts.
 
 - Call install_minecraft_version()
 
-    Before you start Minecraft, you should first call :func:`~minecraft_launcher_lib.install.install_minecraft_version`. This function ensures that everything is right and installs parts if needed.
+    Before you start Minecraft, you should first call :func:`~launcher_coreinstall.install_minecraft_version`. This function ensures that everything is right and installs parts if needed.
     It should even be called, if you installed a version with a installer e.g. Optifine.
 
 - Use the subprocess module

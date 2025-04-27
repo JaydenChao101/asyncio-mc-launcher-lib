@@ -26,7 +26,7 @@ To tell your program the current progress, minecraft-launcher-lib uses callbacks
         current_max = new_max
 
 
-    minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
+    minecraft_directory = launcher_coreutils.get_minecraft_directory()
 
     callback = {
         "setStatus": set_status,
@@ -34,6 +34,6 @@ To tell your program the current progress, minecraft-launcher-lib uses callbacks
         "setMax": set_max
     }
 
-    minecraft_launcher_lib.install.install_minecraft_version("1.17", minecraft_directory, callback=callback)
+    launcher_coreinstall.install_minecraft_version("1.17", minecraft_directory, callback=callback)
 
 As you can see callback is a dict with functions. The functions are defined by you. You can write in these functions whatever you want. In the example above it prints the current status to the commandline.
