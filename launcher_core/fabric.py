@@ -1,53 +1,46 @@
 # This file is part of minecraft-launcher-lib (https://codeberg.org/JakobDev/minecraft-launcher-lib)
 # SPDX-FileCopyrightText: Copyright (c) 2019-2025 JakobDev <jakobdev@gmx.de> and contributors
 # SPDX-License-Identifier: BSD-2-Clause
-"""
-quilt contains functions for dealing with the `Quilt modloader <https://quiltmc.org>`_.
-
-You may have noticed, that the Functions are the same as in the :doc:`fabric` module.
-That's because Quilt is a Fork of Fabric. This module behaves exactly the same as the fabric module.
-"""
-import asyncio
-import tempfile
-import os
-
+"fabric contains functions for dealing with the `Fabric modloader <https://fabricmc.net/>`_."
 from ._helper import (
     download_file,
     get_requests_response_cache,
     parse_maven_metadata,
     empty,
-    SUBPROCESS_STARTUP_INFO,
 )
 from .exceptions import VersionNotFound, UnsupportedVersion, ExternalProgramError
-from ._types import QuiltMinecraftVersion, QuiltLoader, CallbackDict
+from ._types import FabricMinecraftVersion, FabricLoader, CallbackDict
 from .install import install_minecraft_version
 from .utils import is_version_valid
+import asyncio
+import tempfile
+import os
 
 
-async def get_all_minecraft_versions() -> list[QuiltMinecraftVersion]:
+async def get_all_minecraft_versions() -> list[FabricMinecraftVersion]:
     """
-    Returns all available Minecraft Versions for Quilt
+    Returns all available Minecraft Versions for Fabric
 
     Example:
 
     .. code:: python
 
-        for version in await minecraft_launcher_lib.quilt.get_all_minecraft_versions():
+        for version in await launcher_corefabric.get_all_minecraft_versions():
             print(version["version"])
     """
-    quilt_minecraft_versions_url = "https://meta.quiltmc.org/v3/versions/game"
-    return await get_requests_response_cache(quilt_minecraft_versions_url)
+    FABRIC_MINECARFT_VERSIONS_URL = "https://meta.fabricmc.net/v2/versions/game"
+    return await get_requests_response_cache(FABRIC_MINECARFT_VERSIONS_URL)
 
 
 async def get_stable_minecraft_versions() -> list[str]:
     """
-    Returns a list which only contains the stable Minecraft versions that supports Quilt
+    Returns a list which only contains the stable Minecraft versions that supports Fabric
 
     Example:
 
     .. code:: python
 
-        for version in await minecraft_launcher_lib.quilt.get_stable_minecraft_versions():
+        for version in await launcher_corefabric.get_stable_minecraft_versions():
             print(version)
     """
     minecraft_versions = await get_all_minecraft_versions()
@@ -60,14 +53,13 @@ async def get_stable_minecraft_versions() -> list[str]:
 
 async def get_latest_minecraft_version() -> str:
     """
-    Returns the latest unstable Minecraft versions that supports Quilt. This could be a snapshot.
+    Returns the latest unstable Minecraft versions that supports Fabric. This could be a snapshot.
 
     Example:
 
     .. code:: python
 
-        print("Latest Minecraft version: " +
-            await minecraft_launcher_lib.quilt.get_latest_minecraft_version())
+        print("Latest Minecraft version: " + await launcher_corefabric.get_latest_minecraft_version())
     """
     minecraft_versions = await get_all_minecraft_versions()
     return minecraft_versions[0]["version"]
@@ -75,14 +67,13 @@ async def get_latest_minecraft_version() -> str:
 
 async def get_latest_stable_minecraft_version() -> str:
     """
-    Returns the latest stable Minecraft version that supports Quilt
+    Returns the latest stable Minecraft version that supports Fabric
 
     Example:
 
     .. code:: python
 
-        print("Latest stable Minecraft version: " +
-            await minecraft_launcher_lib.quilt.get_latest_stable_minecraft_version())
+        print("Latest stable Minecraft version: " + await launcher_corefabric.get_latest_stable_minecraft_version())
     """
     stable_versions = await get_stable_minecraft_versions()
     return stable_versions[0]
@@ -90,17 +81,17 @@ async def get_latest_stable_minecraft_version() -> str:
 
 async def is_minecraft_version_supported(version: str) -> bool:
     """
-    Checks if a Minecraft version supported by Quilt
+    Checks if a Minecraft version supported by Fabric
 
     Example:
 
     .. code:: python
 
         version = "1.20"
-        if await minecraft_launcher_lib.quilt.is_minecraft_version_supported(version):
-            print(f"{version} is supported by quilt")
+        if await launcher_corefabric.is_minecraft_version_supported(version):
+            print(f"{version} is supported by fabric")
         else:
-            print(f"{version} is not supported by quilt")
+            print(f"{version} is not supported by fabric")
 
     :param version: A vanilla version
     """
@@ -111,7 +102,7 @@ async def is_minecraft_version_supported(version: str) -> bool:
     return False
 
 
-async def get_all_loader_versions() -> list[QuiltLoader]:
+async def get_all_loader_versions() -> list[FabricLoader]:
     """
     Returns all loader versions
 
@@ -119,23 +110,22 @@ async def get_all_loader_versions() -> list[QuiltLoader]:
 
     .. code:: python
 
-        for version in await minecraft_launcher_lib.quilt.get_all_loader_versions():
+        for version in await launcher_corefabric.get_all_loader_versions():
             print(version["version"])
     """
-    quilt_loader_versions_url = "https://meta.quiltmc.org/v3/versions/loader"
-    return await get_requests_response_cache(quilt_loader_versions_url)
+    FABRIC_LOADER_VERSIONS_URL = "https://meta.fabricmc.net/v2/versions/loader"
+    return await get_requests_response_cache(FABRIC_LOADER_VERSIONS_URL)
 
 
 async def get_latest_loader_version() -> str:
     """
     Get the latest loader version
 
-
     Example:
 
     .. code:: python
 
-        print("Latest loader version: " + await minecraft_launcher_lib.quilt.get_latest_loader_version())
+        print("Latest loader version: " + await launcher_corefabric.get_latest_loader_version())
     """
     loader_versions = await get_all_loader_versions()
     return loader_versions[0]["version"]
@@ -149,15 +139,16 @@ async def get_latest_installer_version() -> str:
 
     .. code:: python
 
-        print("Latest installer version: " +
-            await minecraft_launcher_lib.quilt.get_latest_installer_version())
+        print("Latest installer version: " + await launcher_corefabric.get_latest_installer_version())
     """
-    quilt_installer_maven_url = "https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/maven-metadata.xml"
-    result = await parse_maven_metadata(quilt_installer_maven_url)
+    FABRIC_INSTALLER_MAVEN_URL = (
+        "https://maven.fabricmc.net/net/fabricmc/fabric-installer/maven-metadata.xml"
+    )
+    result = await parse_maven_metadata(FABRIC_INSTALLER_MAVEN_URL)
     return result["latest"]
 
 
-async def install_quilt(
+async def install_fabric(
     minecraft_version: str,
     minecraft_directory: str | os.PathLike,
     loader_version: str | None = None,
@@ -165,23 +156,24 @@ async def install_quilt(
     java: str | os.PathLike | None = None,
 ) -> None:
     """
-    Installs the Quilt modloader.
+    Installs the Fabric modloader.
+    For more information take a look at the :doc:`tutorial </tutorial/install_fabric>`.
 
     Example:
 
     .. code:: python
 
         minecraft_version = "1.20"
-        minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
-        await minecraft_launcher_lib.quilt.install_quilt(minecraft_version, minecraft_directory)
+        minecraft_directory = launcher_coreutils.get_minecraft_directory()
+        await launcher_corefabric.install_fabric(minecraft_version, minecraft_directory)
 
-    :param minecraft_version: A vanilla version that is supported by Quilt
+    :param minecraft_version: A vanilla version that is supported by Fabric
     :param minecraft_directory: The path to your Minecraft directory
-    :param loader_version: The Quilt loader version. If not given it will use the latest
-    :param callback: The same dict as for :func:`~minecraft_launcher_lib.install.install_minecraft_version`
+    :param loader_version: The fabric loader version. If not given it will use the latest
+    :param callback: The same dict as for :func:`~launcher_coreinstall.install_minecraft_version`
     :param java: A Path to a custom Java executable
     :raises VersionNotFound: The given Minecraft does not exists
-    :raises UnsupportedVersion: The given Minecraft version is not supported by Quilt
+    :raises UnsupportedVersion: The given Minecraft version is not supported by Fabric
     """
     path = str(minecraft_directory)
     if not callback:
@@ -204,47 +196,43 @@ async def install_quilt(
 
     # Get installer version
     installer_version = await get_latest_installer_version()
-    installer_download_url = (
-        f"https://maven.quiltmc.org/repository/release/org/quiltmc/"
-        f"quilt-installer/{installer_version}/quilt-installer-{installer_version}.jar"
-    )
+    installer_download_url = f"https://maven.fabricmc.net/net/fabricmc/fabric-installer/{installer_version}/fabric-installer-{installer_version}.jar"
 
     with tempfile.TemporaryDirectory(
-        prefix="minecraft-launcher-lib-quilt-install-"
+        prefix="minecraft-launcher-lib-fabric-install-"
     ) as tempdir:
-        installer_path = os.path.join(tempdir, "quit-installer.jar")
+        installer_path = os.path.join(tempdir, "fabric-installer.jar")
 
         # Download the installer
         await download_file(
             installer_download_url, installer_path, callback=callback, overwrite=True
         )
 
-        # Run the installer
-        callback.get("setStatus", empty)("Running quilt installer")
+        # Run the installer see https://fabricmc.net/wiki/install#cli_installation
+        callback.get("setStatus", empty)("Running fabric installer")
         command = [
             "java" if java is None else str(java),
             "-jar",
             installer_path,
-            "install",
             "client",
+            "-dir",
+            path,
+            "-mcversion",
             minecraft_version,
+            "-loader",
             loader_version,
-            f"--install-dir={path}",
-            "--no-profile",
+            "-noprofile",
+            "-snapshot",
         ]
 
         process = await asyncio.create_subprocess_exec(
-            *command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            startupinfo=SUBPROCESS_STARTUP_INFO,
+            *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
-
         stdout, stderr = await process.communicate()
 
         if process.returncode != 0:
             raise ExternalProgramError(command, stdout, stderr)
 
-    # Install all libs of quilt
-    quilt_minecraft_version = f"quilt-loader-{loader_version}-{minecraft_version}"
-    await install_minecraft_version(quilt_minecraft_version, path, callback=callback)
+    # Install all libs of fabric
+    fabric_minecraft_version = f"fabric-loader-{loader_version}-{minecraft_version}"
+    await install_minecraft_version(fabric_minecraft_version, path, callback=callback)

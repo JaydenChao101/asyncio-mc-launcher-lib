@@ -25,7 +25,7 @@ async def get_minecraft_directory() -> str:
 
     .. code:: python
 
-        minecraft_directory = await minecraft_launcher_lib.utils.get_minecraft_directory()
+        minecraft_directory = await launcher_coreutils.get_minecraft_directory()
         print(f"The default minecraft directory is {minecraft_directory}")
     """
     if platform.system() == "Windows":
@@ -51,7 +51,7 @@ async def get_latest_version() -> LatestMinecraftVersions:
 
     .. code:: python
 
-        latest_version = await minecraft_launcher_lib.utils.get_latest_version()
+        latest_version = await launcher_coreutils.get_latest_version()
         print("Latest Release " + latest_version["release"])
         print("Latest Snapshot " + latest_version["snapshot"])
     """
@@ -69,7 +69,7 @@ async def get_version_list() -> list[MinecraftVersionInfo]:
 
     .. code:: python
 
-        async for version in minecraft_launcher_lib.utils.get_version_list():
+        async for version in launcher_coreutils.get_version_list():
             print(version["id"])
     """
     response = await get_requests_response_cache(
@@ -99,8 +99,8 @@ async def get_installed_versions(
 
     .. code:: python
 
-        minecraft_directory = await minecraft_launcher_lib.utils.get_minecraft_directory()
-        versions = await minecraft_launcher_lib.utils.get_installed_versions(minecraft_directory)
+        minecraft_directory = await launcher_coreutils.get_minecraft_directory()
+        versions = await launcher_coreutils.get_installed_versions(minecraft_directory)
         for version in versions:
             print(version["id"])
 
@@ -153,8 +153,8 @@ async def get_available_versions(
 
     .. code:: python
 
-        minecraft_directory = await minecraft_launcher_lib.utils.get_minecraft_directory()
-        versions = await minecraft_launcher_lib.utils.get_available_versions(minecraft_directory)
+        minecraft_directory = await launcher_coreutils.get_minecraft_directory()
+        versions = await launcher_coreutils.get_available_versions(minecraft_directory)
         for version in versions:
             print(version["id"])
 
@@ -183,7 +183,7 @@ async def get_java_executable() -> str:
 
     .. code:: python
 
-        print("The path to Java is " + await minecraft_launcher_lib.utils.get_java_executable())
+        print("The path to Java is " + await launcher_coreutils.get_java_executable())
     """
     if platform.system() == "Windows":
         if (java_home := os.getenv("JAVA_HOME")) is not None:
@@ -226,7 +226,7 @@ async def get_library_version() -> str:
 
     .. code:: python
 
-        print(f"You are using version {await minecraft_launcher_lib.utils.get_library_version()} of minecraft-launcher-lib")
+        print(f"You are using version {await launcher_coreutils.get_library_version()} of minecraft-launcher-lib")
     """
     global _version_cache
     if _version_cache is not None:
@@ -253,9 +253,9 @@ async def generate_test_options() -> MinecraftOptions:
     .. code:: python
 
         version = "1.0"
-        options = await minecraft_launcher_lib.utils.generate_test_options()
-        minecraft_directory = await minecraft_launcher_lib.utils.get_minecraft_directory()
-        command = await minecraft_launcher_lib.command.get_minecraft_command(version, minecraft_directory, options)
+        options = await launcher_coreutils.generate_test_options()
+        minecraft_directory = await launcher_coreutils.get_minecraft_directory()
+        command = await launcher_corecommand.get_minecraft_command(version, minecraft_directory, options)
         await asyncio.create_subprocess_exec(*command)
     """
     return {
@@ -271,15 +271,15 @@ async def is_version_valid(
     """
     Checks if the given version exists.
     This checks if the given version is installed or offered to download by Mojang.
-    Basically you can use this tho check, if the given version can be used with :func:`~minecraft_launcher_lib.install.install_minecraft_version`.
+    Basically you can use this tho check, if the given version can be used with :func:`~launcher_coreinstall.install_minecraft_version`.
 
     Example:
 
     .. code:: python
 
         version = "1.0"
-        minecraft_directory = await minecraft_launcher_lib.utils.get_minecraft_directory()
-        if await minecraft_launcher_lib.utils.is_version_valid(version, minecraft_directory):
+        minecraft_directory = await launcher_coreutils.get_minecraft_directory()
+        if await launcher_coreutils.is_version_valid(version, minecraft_directory):
             print(f"{version} is a valid version")
         else:
             print(f"{version} is not a valid version")
@@ -306,7 +306,7 @@ async def is_vanilla_version(version: str) -> bool:
     .. code:: python
 
         version = "1.0"
-        if await minecraft_launcher_lib.utils.is_vanilla_version(version):
+        if await launcher_coreutils.is_vanilla_version(version):
             print(f"{version} is a vanilla version")
         else:
             print(f"{version} is not a vanilla version")
@@ -327,7 +327,7 @@ async def is_platform_supported() -> bool:
 
     .. code:: python
 
-        if not await minecraft_launcher_lib.utils.is_platform_supported():
+        if not await launcher_coreutils.is_platform_supported():
             print("Your platform is not supported", file=sys.stderr)
             sys.exit(1)
     """
@@ -344,8 +344,8 @@ async def is_minecraft_installed(minecraft_directory: str | os.PathLike) -> bool
 
     .. code:: python
 
-        minecraft_directory = await minecraft_launcher_lib.utils.get_minecraft_directory()
-        if await minecraft_launcher_lib.utils.is_minecraft_installed(minecraft_directory):
+        minecraft_directory = await launcher_coreutils.get_minecraft_directory()
+        if await launcher_coreutils.is_minecraft_installed(minecraft_directory):
             print("Minecraft is installed")
         else:
             print("Minecraft is not installed")

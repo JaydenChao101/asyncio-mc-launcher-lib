@@ -4,14 +4,14 @@
 # This file is part of asyncio-minecraft-launcher-lib (https://github.com/JaydenChao101/asyncio-mc-lancher-lib)
 # Copyright (c) 2025 JaydenChao101 <jaydenchao@proton.me> and contributors
 # This part of the code is licensed under the MIT License.
-from minecraft_launcher_lib.microsoft_types import (
+from launcher_core.microsoft_types import (
     AuthorizationTokenResponse,
     XBLResponse,
     XSTSResponse,
     MinecraftAuthenticateResponse,
     MinecraftProfileResponse,
 )
-from minecraft_launcher_lib.exceptions import (
+from launcher_core.exceptions import (
     AccountNotOwnMinecraft,
     AccountBanFromXbox,
     AccountNeedAdultVerification,
@@ -20,7 +20,7 @@ from minecraft_launcher_lib.exceptions import (
 )
 import urllib.parse
 import aiohttp
-from minecraft_launcher_lib.logging_utils import logger  # 修改此行
+from launcher_core.logging_utils import logger  # 修改此行
 
 __AUTH_URL__ = "https://login.live.com/oauth20_authorize.srf"
 __TOKEN_URL__ = "https://login.live.com/oauth20_token.srf"

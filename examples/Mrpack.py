@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This example shows how use the mrpack module
-import minecraft_launcher_lib
+import launcher_core
 import subprocess
 import sys
 import os
@@ -26,7 +26,7 @@ def main() -> None:
         sys.exit(1)
 
     try:
-        mrpack_information = minecraft_launcher_lib.mrpack.get_mrpack_information(mrpack_path)
+        mrpack_information = launcher_core.mrpack.get_mrpack_information(mrpack_path)
     except Exception:
         print(f"{mrpack_path} is not a valid .mrpack File")
         sys.exit(1)
@@ -44,7 +44,7 @@ def main() -> None:
     minecraft_directory = input("Please enter the Path to your Minecraft directory (leave empty for default): ")
 
     if minecraft_directory == "":
-        minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
+        minecraft_directory = launcher_core.utils.get_minecraft_directory()
 
     modpack_directory = input("Please enter the Path to the Directory you want to install the Modpack (leave empty for your Minecraft directory): ")
 
@@ -52,23 +52,23 @@ def main() -> None:
         modpack_directory = minecraft_directory
 
     # Adds the Optional Files
-    mrpack_install_options: minecraft_launcher_lib._types.MrpackInstallOptions = {"optionalFiles": []}
+    mrpack_install_options: launcher_core._types.MrpackInstallOptions = {"optionalFiles": []}
     for i in mrpack_information["optionalFiles"]:
         if ask_yes_no(f"The Pack includes the Optional File {i}. Do you want to install it?"):
             mrpack_install_options["optionalFiles"].append(i)
 
     # Install
     print("Installing")
-    minecraft_launcher_lib.mrpack.install_mrpack(mrpack_path, minecraft_directory, modpack_directory=modpack_directory, mrpack_install_options=mrpack_install_options, callback={"setStatus": print})
+    launcher_core.mrpack.install_mrpack(mrpack_path, minecraft_directory, modpack_directory=modpack_directory, mrpack_install_options=mrpack_install_options, callback={"setStatus": print})
     print("Finished")
 
     if not ask_yes_no("Do you want to start Minecraft?"):
         return
 
     # We skip the Login in this Example
-    options = minecraft_launcher_lib.utils.generate_test_options()
+    options = launcher_core.utils.generate_test_options()
     options["gameDirectory"] = modpack_directory
-    command = minecraft_launcher_lib.command.get_minecraft_command(minecraft_launcher_lib.mrpack.get_mrpack_launch_version(mrpack_path), minecraft_directory, options)
+    command = launcher_core.command.get_minecraft_command(launcher_core.mrpack.get_mrpack_launch_version(mrpack_path), minecraft_directory, options)
     subprocess.run(command)
 
 

@@ -2,7 +2,7 @@
 # This example shows a simple launcher with PyQt that shows the output of Minecraft in a text filed
 from PyQt6.QtWidgets import QApplication, QWidget, QPlainTextEdit, QLabel, QLineEdit, QPushButton, QComboBox, QMessageBox, QHBoxLayout, QVBoxLayout
 from PyQt6.QtCore import QProcess
-import minecraft_launcher_lib
+import launcher_core
 import sys
 
 
@@ -54,8 +54,8 @@ class MainWindow(QWidget):
         launch_button.clicked.connect(self.launch_minecraft)
 
         # Add all versions to the Version ComboBox
-        self.minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
-        for i in minecraft_launcher_lib.utils.get_available_versions(self.minecraft_directory):
+        self.minecraft_directory = launcher_core.utils.get_minecraft_directory()
+        for i in launcher_core.utils.get_available_versions(self.minecraft_directory):
             # Only add release versions
             if i["type"] == "release":
                 self.version_select.addItem(i["id"])
@@ -83,10 +83,10 @@ class MainWindow(QWidget):
         version = self.version_select.currentText()
 
         # Make sure the version is installed
-        minecraft_launcher_lib.install.install_minecraft_version(version, self.minecraft_directory)
+        launcher_core.install.install_minecraft_version(version, self.minecraft_directory)
 
         # Login
-        login_data = minecraft_launcher_lib.account.login_user(self.username_edit.text(), self.password_edit.text())
+        login_data = launcher_core.account.login_user(self.username_edit.text(), self.password_edit.text())
 
         # Check if the login is correct
         if "errorMessage" in login_data:
@@ -104,7 +104,7 @@ class MainWindow(QWidget):
         }
 
         # Get the command
-        command = minecraft_launcher_lib.command.get_minecraft_command(version, self.minecraft_directory, options)
+        command = launcher_core.command.get_minecraft_command(version, self.minecraft_directory, options)
 
         # Call the function from the
         self.output_widget.execute_command(command)

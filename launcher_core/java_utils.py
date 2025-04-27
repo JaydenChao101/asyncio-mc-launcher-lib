@@ -20,7 +20,7 @@ async def get_java_information(path: str | os.PathLike) -> JavaInformation:
     .. code:: python
 
         java_path = "<path>"
-        information = await minecraft_launcher_lib.java_utils.get_java_information(java_path)
+        information = await launcher_corejava_utils.get_java_information(java_path)
         print("Name: " + information["name"])
         print("Version: " + information["version"])
         print("Java path: " + information["java_path"])
@@ -104,7 +104,7 @@ async def find_system_java_versions(
 
     .. code:: python
 
-        for version in await minecraft_launcher_lib.java_utils.find_system_java_versions():
+        for version in await launcher_corejava_utils.find_system_java_versions():
             print(version)
 
     :param additional_directories: A List of additional Directories to search for Java in custom locations
@@ -141,7 +141,7 @@ async def find_system_java_versions_information(
 
     .. code:: python
 
-        for version_information in await minecraft_launcher_lib.java_utils.find_system_java_versions_information():
+        for version_information in await launcher_corejava_utils.find_system_java_versions_information():
             print("Path: " + version_information["path"])
             print("Name: " + version_information["name"])
             print("Version: " + version_information["version"])

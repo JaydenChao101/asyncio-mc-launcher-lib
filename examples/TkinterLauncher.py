@@ -2,7 +2,7 @@
 # This example shows how to write a basic launcher with Tkinter.
 from tkinter import Tk, Label, Entry, Button, mainloop
 from tkinter.ttk import Combobox
-import minecraft_launcher_lib
+import launcher_core
 import subprocess
 import sys
 
@@ -11,16 +11,16 @@ def main():
     def launch():
         window.withdraw()
 
-        minecraft_launcher_lib.install.install_minecraft_version(version_select.get(), minecraft_directory)
+        launcher_core.install.install_minecraft_version(version_select.get(), minecraft_directory)
 
-        login_data = minecraft_launcher_lib.account.login_user(username_input.get(), password_input.get())
+        login_data = launcher_core.account.login_user(username_input.get(), password_input.get())
 
         options = {
             "username": login_data["selectedProfile"]["name"],
             "uuid": login_data["selectedProfile"]["id"],
             "token": login_data["accessToken"]
         }
-        minecraft_command = minecraft_launcher_lib.command.get_minecraft_command(version_select.get(), minecraft_directory, options)
+        minecraft_command = launcher_core.command.get_minecraft_command(version_select.get(), minecraft_directory, options)
 
         subprocess.run(minecraft_command)
 
@@ -36,8 +36,8 @@ def main():
     password_input = Entry(window)
     password_input.grid(row=1, column=1)
 
-    minecraft_directory = minecraft_launcher_lib.utils.get_minecraft_directory()
-    versions = minecraft_launcher_lib.utils.get_available_versions(minecraft_directory)
+    minecraft_directory = launcher_core.utils.get_minecraft_directory()
+    versions = launcher_core.utils.get_available_versions(minecraft_directory)
     version_list = []
 
     for i in versions:
