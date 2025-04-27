@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "minecraft-launcher-lib"
+name = "async-mc-launcher-core"
 description = "A library for creating a custom Minecraft launcher"
 readme = "README.md"
 requires-python = ">=3.10"
