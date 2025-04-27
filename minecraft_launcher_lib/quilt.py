@@ -7,6 +7,10 @@ quilt contains functions for dealing with the `Quilt modloader <https://quiltmc.
 You may have noticed, that the Functions are the same as in the :doc:`fabric` module.
 That's because Quilt is a Fork of Fabric. This module behaves exactly the same as the fabric module.
 """
+import asyncio
+import tempfile
+import os
+
 from ._helper import (
     download_file,
     get_requests_response_cache,
@@ -18,9 +22,6 @@ from .exceptions import VersionNotFound, UnsupportedVersion, ExternalProgramErro
 from ._types import QuiltMinecraftVersion, QuiltLoader, CallbackDict
 from .install import install_minecraft_version
 from .utils import is_version_valid
-import asyncio
-import tempfile
-import os
 
 
 async def get_all_minecraft_versions() -> list[QuiltMinecraftVersion]:
@@ -34,8 +35,8 @@ async def get_all_minecraft_versions() -> list[QuiltMinecraftVersion]:
         for version in await minecraft_launcher_lib.quilt.get_all_minecraft_versions():
             print(version["version"])
     """
-    QUILT_MINECARFT_VERSIONS_URL = "https://meta.quiltmc.org/v3/versions/game"
-    return await get_requests_response_cache(QUILT_MINECARFT_VERSIONS_URL)
+    quilt_minecraft_versions_url = "https://meta.quiltmc.org/v3/versions/game"
+    return await get_requests_response_cache(quilt_minecraft_versions_url)
 
 
 async def get_stable_minecraft_versions() -> list[str]:
@@ -65,7 +66,8 @@ async def get_latest_minecraft_version() -> str:
 
     .. code:: python
 
-        print("Latest Minecraft version: " + await minecraft_launcher_lib.quilt.get_latest_minecraft_version())
+        print("Latest Minecraft version: " +
+            await minecraft_launcher_lib.quilt.get_latest_minecraft_version())
     """
     minecraft_versions = await get_all_minecraft_versions()
     return minecraft_versions[0]["version"]
@@ -79,7 +81,8 @@ async def get_latest_stable_minecraft_version() -> str:
 
     .. code:: python
 
-        print("Latest stable Minecraft version: " + await minecraft_launcher_lib.quilt.get_latest_stable_minecraft_version())
+        print("Latest stable Minecraft version: " +
+            await minecraft_launcher_lib.quilt.get_latest_stable_minecraft_version())
     """
     stable_versions = await get_stable_minecraft_versions()
     return stable_versions[0]
@@ -119,8 +122,8 @@ async def get_all_loader_versions() -> list[QuiltLoader]:
         for version in await minecraft_launcher_lib.quilt.get_all_loader_versions():
             print(version["version"])
     """
-    QUILT_LOADER_VERSIONS_URL = "https://meta.quiltmc.org/v3/versions/loader"
-    return await get_requests_response_cache(QUILT_LOADER_VERSIONS_URL)
+    quilt_loader_versions_url = "https://meta.quiltmc.org/v3/versions/loader"
+    return await get_requests_response_cache(quilt_loader_versions_url)
 
 
 async def get_latest_loader_version() -> str:
@@ -146,10 +149,11 @@ async def get_latest_installer_version() -> str:
 
     .. code:: python
 
-        print("Latest installer version: " + await minecraft_launcher_lib.quilt.get_latest_installer_version())
+        print("Latest installer version: " +
+            await minecraft_launcher_lib.quilt.get_latest_installer_version())
     """
-    QUILT_INSTALLER_MAVEN_URL = "https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/maven-metadata.xml"
-    result = await parse_maven_metadata(QUILT_INSTALLER_MAVEN_URL)
+    quilt_installer_maven_url = "https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/maven-metadata.xml"
+    result = await parse_maven_metadata(quilt_installer_maven_url)
     return result["latest"]
 
 
@@ -200,7 +204,10 @@ async def install_quilt(
 
     # Get installer version
     installer_version = await get_latest_installer_version()
-    installer_download_url = f"https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/{installer_version}/quilt-installer-{installer_version}.jar"
+    installer_download_url = (
+        f"https://maven.quiltmc.org/repository/release/org/quiltmc/"
+        f"quilt-installer/{installer_version}/quilt-installer-{installer_version}.jar"
+    )
 
     with tempfile.TemporaryDirectory(
         prefix="minecraft-launcher-lib-quilt-install-"

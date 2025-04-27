@@ -37,6 +37,7 @@ classifiers = [
 dependencies = [
   "aiofiles>=24.1.0",
   "aiohttp>=3.11.18",
+  "requests>=2.32.3",
   "requests-mock>=1.12.1",
 ]
 dynamic = ["version"]
@@ -51,9 +52,3 @@ Donation = "https://ko-fi.com/jakobdev"
 [tool.setuptools.dynamic]
 version = { file = "minecraft_launcher_lib/version.txt" }
 
-[tool.pytest.ini_options]
-addopts = "-v --basetemp=pytest-temp --durations=10 --cov=minecraft_launcher_lib --cov-report html --cov-report term --cov-report term-missing"
-testpaths = ["minecraft_launcher_lib"]
-
-[tool.mypy]
-modules = ["minecraft_launcher_lib"]

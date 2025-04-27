@@ -1,4 +1,4 @@
-name: Python Package CI
+name: Build Python Package
 
 on:
   push:
@@ -35,3 +35,9 @@ jobs:
       - name: Build application
         run: |
           uv build
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-artifact-${{ matrix.python-version }}-${{ github.run_id }}
+          path: dist/*.whl

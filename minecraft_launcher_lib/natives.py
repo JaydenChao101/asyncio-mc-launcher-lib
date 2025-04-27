@@ -1,16 +1,17 @@
-# This file is part of minecraft-launcher-lib (https://codeberg.org/JakobDev/minecraft-launcher-lib)
-# SPDX-FileCopyrightText: Copyright (c) 2019-2025 JakobDev <jakobdev@gmx.de> and contributors
-# SPDX-License-Identifier: BSD-2-Clause
-"natives contains a function for extracting natives libraries to a specific folder"
-from ._internal_types.shared_types import ClientJson, ClientJsonLibrary
-from ._helper import parse_rule_list, inherit_json, get_library_path
-from .exceptions import VersionNotFound
+# 標準庫導入
 from typing import Literal
-import aiofiles
 import platform
 import zipfile
 import json
 import os
+
+# 第三方庫導入
+import aiofiles
+
+# 本地導入
+from ._internal_types.shared_types import ClientJson, ClientJsonLibrary
+from ._helper import parse_rule_list, inherit_json, get_library_path
+from .exceptions import VersionNotFound
 
 __all__ = ["extract_natives"]
 
@@ -28,20 +29,15 @@ def get_natives(data: ClientJsonLibrary) -> str:
         if platform.system() == "Windows":
             if "windows" in data["natives"]:
                 return data["natives"]["windows"].replace("${arch}", arch_type)
-            else:
-                return ""
-        elif platform.system() == "Darwin":
+            return ""
+        if platform.system() == "Darwin":
             if "osx" in data["natives"]:
                 return data["natives"]["osx"].replace("${arch}", arch_type)
-            else:
-                return ""
-        else:
-            if "linux" in data["natives"]:
-                return data["natives"]["linux"].replace("${arch}", arch_type)
-            else:
-                return ""
-    else:
+            return ""
+        if "linux" in data["natives"]:
+            return data["natives"]["linux"].replace("${arch}", arch_type)
         return ""
+    return ""
 
 
 async def extract_natives_file(
@@ -52,7 +48,7 @@ async def extract_natives_file(
     """
     try:
         os.mkdir(extract_path)
-    except Exception:
+    except (IOError, OSError):
         pass
 
     with zipfile.ZipFile(filename, "r") as zf:
