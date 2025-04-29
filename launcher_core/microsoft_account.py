@@ -24,12 +24,13 @@ from launcher_core.logging_utils import logger  # 修改此行
 
 __AUTH_URL__ = "https://login.live.com/oauth20_authorize.srf"
 __TOKEN_URL__ = "https://login.live.com/oauth20_token.srf"
-CLIENT_ID = "00000000402b5328"
-REDIRECT_URI = "https://login.live.com/oauth20_desktop.srf"
-__SCOPE__ = "service::user.auth.xboxlive.com::MBI_SSL"
+__SCOPE__ = "XboxLive.signin offline_access"
 
 
-async def get_login_url() -> str:
+async def get_login_url(
+    CLIENT_ID: str = "00000000402b5328",
+    REDIRECT_URI: str = "https://login.live.com/oauth20_desktop.srf",
+) -> str:
     """
     Generate a login url.
     :return: The url to the website on which the user logs in
@@ -64,7 +65,12 @@ async def extract_code_from_url(url: str) -> str:
     return query_params["code"][0]
 
 
-async def get_ms_token(code: str) -> AuthorizationTokenResponse:
+async def get_ms_token(
+    code: str,
+    CLIENT_SECRET: str = None,
+    CLIENT_ID: str = "00000000402b5328",
+    REDIRECT_URI: str = "https://login.live.com/oauth20_desktop.srf",
+) -> AuthorizationTokenResponse:
     """
     Get the Microsoft token using the code from the login url.
 
@@ -78,10 +84,14 @@ async def get_ms_token(code: str) -> AuthorizationTokenResponse:
         "redirect_uri": REDIRECT_URI,
         "scope": __SCOPE__,
     }
+    if CLIENT_SECRET:
+        data["client_secret"] = CLIENT_SECRET
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
     async with aiohttp.ClientSession() as session:
-        async with session.post(__TOKEN_URL__, data=data, headers=headers) as resp:
+        async with session.post(
+            __TOKEN_URL__, data=urllib.parse.urlencode(data), headers=headers
+        ) as resp:
             resp.raise_for_status()
             data = await resp.json()
             logger.info(f"Microsoft token response: {data}")
@@ -93,7 +103,7 @@ async def get_xbl_token(ms_access_token: str) -> XBLResponse:
         "Properties": {
             "AuthMethod": "RPS",
             "SiteName": "user.auth.xboxlive.com",
-            "RpsTicket": ms_access_token,
+            "RpsTicket": f"d={ms_access_token}",
         },
         "RelyingParty": "http://auth.xboxlive.com",  # 注意这里
         "TokenType": "JWT",
