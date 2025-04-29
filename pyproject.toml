@@ -46,5 +46,5 @@ Issues = "https://github.com/JaydenChao101/asyncio-mc-launcher-lib/issues"
 Source = "https://github.com/JaydenChao101/asyncio-mc-launcher-lib"
 
 [tool.setuptools.dynamic]
-version = { file = "minecraft_launcher_lib/version.txt" }
+version = { file = "launcher_core/version.txt" }
 
