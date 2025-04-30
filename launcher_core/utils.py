@@ -58,7 +58,9 @@ async def get_latest_version() -> LatestMinecraftVersions:
     response = await get_requests_response_cache(
         "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
     )
-    return response.json()["latest"]
+
+    data = json.loads(response["content"])
+    return data["latest"]
 
 
 async def get_version_list() -> list[MinecraftVersionInfo]:
@@ -75,7 +77,7 @@ async def get_version_list() -> list[MinecraftVersionInfo]:
     response = await get_requests_response_cache(
         "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
     )
-    vlist: VersionListManifestJson = response.json()
+    vlist: VersionListManifestJson = response
     returnlist: list[MinecraftVersionInfo] = []
     for i in vlist["versions"]:
         returnlist.append(

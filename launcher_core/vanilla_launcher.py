@@ -217,10 +217,13 @@ async def get_vanilla_launcher_profile_version(
         raise InvalidVanillaLauncherProfile(vanilla_profile)
 
     version_type = vanilla_profile["versionType"]
+
     if version_type == "latest-release":
-        return get_latest_version()["release"]
+        latest_version = await get_latest_version()
+        return latest_version["release"]
     elif version_type == "latest-snapshot":
-        return get_latest_version()["snapshot"]
+        latest_version = await get_latest_version()
+        return latest_version["snapshot"]
     else:  # custom
         return vanilla_profile["version"]  # type: ignore
 
