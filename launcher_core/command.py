@@ -55,20 +55,19 @@ def get_libraries(data: ClientJson, path: str) -> str:
     return libstr
 
 
-def replace_arguments(
+async def replace_arguments(
     argstr: str,
     versionData: ClientJson,
     path: str,
     options: MinecraftOptions,
     classpath: str,
 ) -> str:
-    """
-    Replace all placeholder in arguments with the needed value
-    """
     arg_replacements = {
         "${natives_directory}": options["nativesDirectory"],
         "${launcher_name}": options.get("launcherName", "minecraft-launcher-lib"),
-        "${launcher_version}": options.get("launcherVersion", get_library_version()),
+        "${launcher_version}": options.get(
+            "launcherVersion", await get_library_version()
+        ),
         "${classpath}": classpath,
         "${auth_player_name}": options.get("username", "{username}"),
         "${version_name}": versionData["id"],
@@ -95,12 +94,12 @@ def replace_arguments(
     }
 
     for key, value in arg_replacements.items():
-        argstr = argstr.replace(key, value)
+        argstr = argstr.replace(key, str(value))
 
     return argstr
 
 
-def get_arguments_string(
+async def get_arguments_string(
     versionData: ClientJson, path: str, options: MinecraftOptions, classpath: str
 ) -> list[str]:
     """
@@ -109,7 +108,7 @@ def get_arguments_string(
     arglist: list[str] = []
 
     for v in versionData["minecraftArguments"].split(" "):
-        v = replace_arguments(v, versionData, path, options, classpath)
+        v = await replace_arguments(v, versionData, path, options, classpath)
         arglist.append(v)
 
     # Custom resolution is not in the list
@@ -125,7 +124,7 @@ def get_arguments_string(
     return arglist
 
 
-def get_arguments(
+async def get_arguments(
     data: list[str | ClientJsonArgumentRule],
     versionData: ClientJson,
     path: str,
@@ -139,7 +138,9 @@ def get_arguments(
     for i in data:
         # i could be the argument
         if isinstance(i, str):
-            arglist.append(replace_arguments(i, versionData, path, options, classpath))
+            arglist.append(
+                await replace_arguments(i, versionData, path, options, classpath)
+            )
         else:
             # Rules might has 2 different names in different client.json
             if "compatibilityRules" in i and not parse_rule_list(
@@ -153,12 +154,16 @@ def get_arguments(
             # Sometimes  i["value"] is the argument
             if isinstance(i["value"], str):
                 arglist.append(
-                    replace_arguments(i["value"], versionData, path, options, classpath)
+                    await replace_arguments(
+                        i["value"], versionData, path, options, classpath
+                    )
                 )
             # Sometimes i["value"] is a list of arguments
             else:
                 for v in i["value"]:
-                    v = replace_arguments(v, versionData, path, options, classpath)
+                    v = await replace_arguments(
+                        v, versionData, path, options, classpath
+                    )
                     arglist.append(v)
     return arglist
 
@@ -246,7 +251,7 @@ async def get_minecraft_command(
     # Newer Versions have jvmArguments in client.json
     if isinstance(data.get("arguments", None), dict):
         if "jvm" in data["arguments"]:
-            command = command + get_arguments(
+            command = command + await get_arguments(
                 data["arguments"]["jvm"], data, path, options, classpath
             )
         else:
@@ -278,9 +283,9 @@ async def get_minecraft_command(
 
     if "minecraftArguments" in data:
         # For older versions
-        command = command + get_arguments_string(data, path, options, classpath)
+        command = command + await get_arguments_string(data, path, options, classpath)
     else:
-        command = command + get_arguments(
+        command = command + await get_arguments(
             data["arguments"]["game"], data, path, options, classpath
         )
 

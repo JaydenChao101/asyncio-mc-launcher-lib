@@ -8,12 +8,13 @@ For more information about TypedDict see `PEP 589 <https://peps.python.org/pep-0
 """
 from typing import Literal, TypedDict, Callable
 import datetime
-from uuid import uuid4
+from uuid import UUID
+from dataclasses import dataclass
 
 
 class MinecraftOptions(TypedDict, total=False):
     username: str
-    uuid: str
+    uuid: UUID
     token: str
     executablePath: str
     defaultExecutablePath: str
@@ -199,12 +200,13 @@ class JavaPatchNotes(TypedDict):
     entries: list[_JavaPatchNoteEntry]
 
 
-class Credential(TypedDict):
+@dataclass
+class Credential:
     access_token: str
     username: str
-    uuid: uuid4
+    uuid: UUID
 
 
-class skin(TypedDict):
+class Skin(TypedDict):
     skin: str
     cape: str
