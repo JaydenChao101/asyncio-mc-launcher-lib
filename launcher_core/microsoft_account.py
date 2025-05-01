@@ -16,6 +16,7 @@ from launcher_core.exceptions import (
     AccountNotHaveXbox,
     XboxLiveNotAvailable,
 )
+from ._types import AzureApplication
 import urllib.parse
 import aiohttp
 from launcher_core.logging_utils import logger
@@ -33,11 +34,11 @@ __DEVICE_CODE_URL__ = (
 class Login:
     def __init__(
         self,
-        CLIENT_ID: str = "00000000402b5328",
-        REDIRECT_URI: str = "https://login.live.com/oauth20_desktop.srf",
+        AZURE_APP: AzureApplication = None,
     ):
-        self.CLIENT_ID = CLIENT_ID
-        self.REDIRECT_URI = REDIRECT_URI
+        self.CLIENT_ID = AZURE_APP['client_id']
+        self.REDIRECT_URI = AZURE_APP['redirect_uri']
+        self.CLIENT_SECRET = AZURE_APP['client_secret']
 
     async def get_login_url(self) -> str:
         """
@@ -56,7 +57,7 @@ class Login:
             ._replace(query=urllib.parse.urlencode(parameters))
             .geturl()
         )
-        logger.info(f"Login url: {url}")  # Re-enabled logging of login URL.
+        logger.info(f"Generated login URL for Microsoft account authentication: {url}")  # Re-enabled logging of login URL with additional context.
         return url
 
     async def extract_code_from_url(self, url: str) -> str:
@@ -186,7 +187,7 @@ class Login:
                         raise AccountNeedAdultVerification()
                     else:
                         raise Exception(
-                            f"Loginning of the XSTS token error: {error_code}"
+                            f"Loginning of the XSTS token error: {error_code}, full response: {data}"
                         )
 
                 logger.info(f"XSTS Token response: {data}")
@@ -215,15 +216,21 @@ class Login:
                 resp.raise_for_status()
                 data = await resp.json()
                 logger.info(f"Minecraft access token response: {data}")
+                required_keys = ["access_token", "expires_in"]
+                for key in required_keys:
+                    if key not in data:
+                        raise KeyError(f"Missing required key '{key}' in Minecraft access token response: {data}")
                 return data
 
 
 class device_code_login:
     def __init__(
         self,
-        CLIENT_ID: str,
+        AZURE_APP: AzureApplication = None,
+        language: str = "en",
     ):
-        self.CLIENT_ID = CLIENT_ID
+        self.CLIENT_ID = AZURE_APP['client_id']
+        self.language = language
 
     async def get_device_code(self) -> dict:
         """
@@ -239,7 +246,7 @@ class device_code_login:
 
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                __DEVICE_CODE_URL__, data=data, headers=headers
+                f"{__DEVICE_CODE_URL__}?mkt={self.language}", data=data, headers=headers
             ) as resp:
                 resp.raise_for_status()
                 return await resp.json()
@@ -252,6 +259,7 @@ class device_code_login:
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         elapsed = 0
+        max_interval = 60  # Set a maximum interval to prevent excessive delays
         while elapsed < expires_in:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
@@ -263,8 +271,9 @@ class device_code_login:
                     elif result.get("error") == "authorization_pending":
                         await asyncio.sleep(interval)
                         elapsed += interval
+                        interval = min(interval * 2, max_interval)  # Exponential backoff
                     elif result.get("error") == "slow_down":
-                        interval += 5
+                        interval = min(interval + 5, max_interval)
                         await asyncio.sleep(interval)
                         elapsed += interval
                     else:
@@ -274,23 +283,25 @@ class device_code_login:
 
 async def refresh_minecraft_token(
     refresh_token: str,
-    CLIENT_ID: str = "00000000402b5328",
-    CLIENT_SECRET: str = None,
+    AZURE_APP: AzureApplication
 ) -> AuthorizationTokenResponse:
     """
     Refresh the Minecraft token using the refresh token.
 
     :param refresh_token: The refresh token
+    :param AZURE_APP: A dictionary containing Azure application details with keys:
+                      - 'client_id': The client ID of the Azure application.
+                      - 'client_secret': The client secret of the Azure application (optional).
     :return: The refreshed Minecraft token
     """
     data = {
-        "client_id": CLIENT_ID,
+        "client_id": AZURE_APP['client_id'],
         "refresh_token": refresh_token,
         "grant_type": "refresh_token",
         "scope": __SCOPE__,
     }
-    if CLIENT_SECRET:
-        data["client_secret"] = CLIENT_SECRET
+    if AZURE_APP['client_secret']:
+        data["client_secret"] = AZURE_APP['client_secret']
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
     async with aiohttp.ClientSession() as session:

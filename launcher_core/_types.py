@@ -240,3 +240,9 @@ class MinecraftProfileResponse(TypedDict, total=False):
     properties: list[MinecraftProfileProperty]  # 舊版
     skins: list[MinecraftProfileSkin]  # 新版
     capes: list[MinecraftProfileCape]  # 新版
+
+
+class AzureApplication(TypedDict):
+    client_id: str = "00000000402b5328"
+    client_secret: str = None
+    redirect_uri: str = "https://login.live.com/oauth20_desktop.srf"
