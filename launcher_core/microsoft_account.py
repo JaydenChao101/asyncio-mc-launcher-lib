@@ -25,10 +25,17 @@ __AUTH_URL__ = "https://login.live.com/oauth20_authorize.srf"
 __TOKEN_URL__ = "https://login.live.com/oauth20_token.srf"
 __DEVICE_TOKEN_URL__ = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
 __SCOPE__ = "XboxLive.signin offline_access"
-__DEVICE_CODE_URL__ = "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode"
+__DEVICE_CODE_URL__ = (
+    "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode"
+)
+
 
 class Login:
-    def __init__(self,CLIENT_ID: str = "00000000402b5328", REDIRECT_URI: str = "https://login.live.com/oauth20_desktop.srf"):
+    def __init__(
+        self,
+        CLIENT_ID: str = "00000000402b5328",
+        REDIRECT_URI: str = "https://login.live.com/oauth20_desktop.srf",
+    ):
         self.CLIENT_ID = CLIENT_ID
         self.REDIRECT_URI = REDIRECT_URI
 
@@ -52,7 +59,6 @@ class Login:
         logger.info(f"Login url: {url}")  # Re-enabled logging of login URL.
         return url
 
-
     async def extract_code_from_url(self, url: str) -> str:
         """
         Extract the code from the redirect url.
@@ -65,7 +71,6 @@ class Login:
         if "code" not in query_params:
             raise ValueError("No code found in the URL")
         return query_params["code"][0]
-
 
     async def get_ms_token(
         self,
@@ -99,7 +104,6 @@ class Login:
                 logger.info(f"Microsoft token response: {data}")
                 return data
 
-
     async def get_xbl_token(ms_access_token: str) -> XBLResponse:
         payload = {
             "Properties": {
@@ -122,7 +126,6 @@ class Login:
                 data = await resp.json()
                 logger.info(f"Xbox Token response: {data}")
                 return data
-
 
     async def get_xsts_token(xbl_token: str) -> XSTSResponse:
         """
@@ -182,11 +185,12 @@ class Login:
                     ):
                         raise AccountNeedAdultVerification()
                     else:
-                        raise Exception(f"Loginning of the XSTS token error: {error_code}")
+                        raise Exception(
+                            f"Loginning of the XSTS token error: {error_code}"
+                        )
 
                 logger.info(f"XSTS Token response: {data}")
                 return data
-
 
     async def get_minecraft_access_token(
         xsts_token: str, uhs: str
@@ -212,10 +216,13 @@ class Login:
                 data = await resp.json()
                 logger.info(f"Minecraft access token response: {data}")
                 return data
-    
+
 
 class device_code_login:
-    def __init__(self, CLIENT_ID: str,):
+    def __init__(
+        self,
+        CLIENT_ID: str,
+    ):
         self.CLIENT_ID = CLIENT_ID
 
     async def get_device_code(self) -> dict:
@@ -231,10 +238,12 @@ class device_code_login:
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         async with aiohttp.ClientSession() as session:
-            async with session.post(__DEVICE_CODE_URL__, data=data, headers=headers) as resp:
+            async with session.post(
+                __DEVICE_CODE_URL__, data=data, headers=headers
+            ) as resp:
                 resp.raise_for_status()
                 return await resp.json()
-    
+
     async def poll_device_code(self, device_code: str, interval: int, expires_in: int):
         data = {
             "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
@@ -245,7 +254,9 @@ class device_code_login:
         elapsed = 0
         while elapsed < expires_in:
             async with aiohttp.ClientSession() as session:
-                async with session.post(__DEVICE_TOKEN_URL__, data=data, headers=headers) as resp:
+                async with session.post(
+                    __DEVICE_TOKEN_URL__, data=data, headers=headers
+                ) as resp:
                     result = await resp.json()
                     if "access_token" in result:
                         return result
@@ -259,6 +270,37 @@ class device_code_login:
                     else:
                         raise Exception(f"Device code flow error: {result}")
         raise Exception("Device code expired or not authorized in time.")
+
+
+async def refresh_minecraft_token(
+    refresh_token: str,
+    CLIENT_ID: str = "00000000402b5328",
+    CLIENT_SECRET: str = None,
+) -> AuthorizationTokenResponse:
+    """
+    Refresh the Minecraft token using the refresh token.
+
+    :param refresh_token: The refresh token
+    :return: The refreshed Minecraft token
+    """
+    data = {
+        "client_id": CLIENT_ID,
+        "refresh_token": refresh_token,
+        "grant_type": "refresh_token",
+        "scope": __SCOPE__,
+    }
+    if CLIENT_SECRET:
+        data["client_secret"] = CLIENT_SECRET
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            __TOKEN_URL__, data=urllib.parse.urlencode(data), headers=headers
+        ) as resp:
+            resp.raise_for_status()
+            data = await resp.json()
+            logger.info(f"Refreshed Minecraft token response: {data}")
+            return data
 
 
 # This example shows how to login to a Microsoft account and get the access token.

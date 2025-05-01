@@ -12,7 +12,7 @@ from ._internal_types.shared_types import ClientJson, ClientJsonArgumentRule
 from .runtime import get_executable_path
 from .exceptions import VersionNotFound
 from .utils import get_library_version
-from ._types import MinecraftOptions
+from ._types import MinecraftOptions, Credential
 from .natives import get_natives
 import aiofiles
 import json
@@ -71,7 +71,7 @@ async def replace_arguments(
         "${classpath}": classpath,
         "${auth_player_name}": options.get("username", "{username}"),
         "${version_name}": versionData["id"],
-        "${game_directory}": options.get("gameDirectory", path),
+        "${game_directory}": options.get("gameDir", path),
         "${assets_root}": os.path.join(path, "assets"),
         "${assets_index_name}": versionData.get("assets", versionData["id"]),
         "${auth_uuid}": options.get("uuid", "{uuid}"),
@@ -169,7 +169,10 @@ async def get_arguments(
 
 
 async def get_minecraft_command(
-    version: str, minecraft_directory: str | os.PathLike, options: MinecraftOptions
+    version: str,
+    minecraft_directory: str | os.PathLike,
+    options: MinecraftOptions,
+    Credential: Credential | None = None,
 ) -> list[str]:
     """
     Returns the command for running minecraft as list. The given command can be executed with subprocess. Use :func:`~launcher_coreutils.get_minecraft_directory` to get the default Minecraft directory.
@@ -214,6 +217,14 @@ async def get_minecraft_command(
     For more information about the options take a look at the :doc:`/tutorial/more_launch_options` tutorial.
     """
     path = str(minecraft_directory)
+
+    if Credential:
+        token = Credential.access_token if Credential else options.get("token", None)
+        username = Credential.username if Credential else options.get("username", None)
+        uuid = Credential.uuid if Credential else options.get("uuid", None)
+        options["token"] = token
+        options["username"] = username
+        options["uuid"] = uuid
 
     if not os.path.isdir(os.path.join(path, "versions", version)):
         raise VersionNotFound(version)

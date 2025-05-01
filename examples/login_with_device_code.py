@@ -17,7 +17,7 @@ async def device_code_login_flow(client_id: str):
     if token_info is None:
         print("授權失敗或超時")
         return
-    
+    print(token_info['refresh_token'])  # 顯示授權結果
     # 這裡可以繼續呼叫 get_xbl_token、get_xsts_token、get_minecraft_access_token 等
     # 來獲取 Xbox Live Token、XSTS Token 和 Minecraft Access Token
     xbl_token = await Login.get_xbl_token(token_info["access_token"])
