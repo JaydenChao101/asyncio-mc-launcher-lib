@@ -36,6 +36,7 @@ class MinecraftOptions(TypedDict, total=False):
     quickPlaySingleplayer: str | None
     quickPlayMultiplayer: str | None
     quickPlayRealms: str | None
+    gameDir : str | None
 
 
 class CallbackDict(TypedDict, total=False):
@@ -210,3 +211,32 @@ class Credential:
 class Skin(TypedDict):
     skin: str
     cape: str
+
+
+class MinecraftProfileProperty(TypedDict, total=False):
+    name: str
+    value: str
+    signature: str
+
+
+class MinecraftProfileSkin(TypedDict, total=False):
+    id: str
+    state: str
+    url: str
+    variant: str
+    alias: str
+
+
+class MinecraftProfileCape(TypedDict, total=False):
+    id: str
+    state: str
+    url: str
+    alias: str
+
+
+class MinecraftProfileResponse(TypedDict, total=False):
+    id: str
+    name: str
+    properties: list[MinecraftProfileProperty]  # 舊版
+    skins: list[MinecraftProfileSkin]  # 新版
+    capes: list[MinecraftProfileCape]  # 新版

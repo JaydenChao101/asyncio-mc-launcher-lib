@@ -109,6 +109,7 @@ class Skin:
             async with session.delete(url, headers=headers) as response:
                 return response.status == 204
 
+
 async def have_minecraft(access_token: str) -> bool:
     """
     Check if the user owns Minecraft using the access token.
