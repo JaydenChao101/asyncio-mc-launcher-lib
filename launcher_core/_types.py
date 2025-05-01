@@ -36,7 +36,7 @@ class MinecraftOptions(TypedDict, total=False):
     quickPlaySingleplayer: str | None
     quickPlayMultiplayer: str | None
     quickPlayRealms: str | None
-    gameDir : str | None
+    gameDir: str | None
 
 
 class CallbackDict(TypedDict, total=False):

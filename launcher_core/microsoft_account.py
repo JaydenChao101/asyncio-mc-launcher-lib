@@ -25,9 +25,9 @@ __AUTH_URL__ = "https://login.live.com/oauth20_authorize.srf"
 __TOKEN_URL__ = "https://login.live.com/oauth20_token.srf"
 __DEVICE_TOKEN_URL__ = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
 __SCOPE__ = "XboxLive.signin offline_access"
-__DEVICE_CODE_URL__ = "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode"
-    
-
+__DEVICE_CODE_URL__ = (
+    "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode"
+)
 
 
 class Login:
@@ -270,6 +270,37 @@ class device_code_login:
                     else:
                         raise Exception(f"Device code flow error: {result}")
         raise Exception("Device code expired or not authorized in time.")
+
+
+async def refresh_minecraft_token(
+    refresh_token: str,
+    CLIENT_ID: str = "00000000402b5328",
+    CLIENT_SECRET: str = None,
+) -> AuthorizationTokenResponse:
+    """
+    Refresh the Minecraft token using the refresh token.
+
+    :param refresh_token: The refresh token
+    :return: The refreshed Minecraft token
+    """
+    data = {
+        "client_id": CLIENT_ID,
+        "refresh_token": refresh_token,
+        "grant_type": "refresh_token",
+        "scope": __SCOPE__,
+    }
+    if CLIENT_SECRET:
+        data["client_secret"] = CLIENT_SECRET
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            __TOKEN_URL__, data=urllib.parse.urlencode(data), headers=headers
+        ) as resp:
+            resp.raise_for_status()
+            data = await resp.json()
+            logger.info(f"Refreshed Minecraft token response: {data}")
+            return data
 
 
 # This example shows how to login to a Microsoft account and get the access token.
