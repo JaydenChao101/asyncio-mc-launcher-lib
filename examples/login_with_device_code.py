@@ -1,9 +1,12 @@
 import asyncio
-from launcher_core.microsoft_account import device_code_login, Login 
+from launcher_core.microsoft_account import device_code_login, Login
+from launcher_core._types import AzureApplication
 
 async def device_code_login_flow(client_id: str):
     # 建立 device_code_login 實例
-    login = device_code_login(client_id)
+    login = device_code_login(AzureApplication(client_id=client_id),"zh-Hant")  # zh-Hant 是繁體中文，zh-Hans 是簡體中文，en 是英文
+    # 這裡可以選擇使用者的語言，預設為英文
+
     # 取得 device code
     code_info = await login.get_device_code()
     print(code_info["message"])  # 顯示提示訊息給使用者
