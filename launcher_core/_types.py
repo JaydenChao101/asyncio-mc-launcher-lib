@@ -241,6 +241,7 @@ class MinecraftProfileResponse(TypedDict, total=False):
     skins: list[MinecraftProfileSkin]  # 新版
     capes: list[MinecraftProfileCape]  # 新版
 
+
 class AzureApplication(TypedDict):
     client_id: str = "00000000402b5328"
     client_secret: str = None
