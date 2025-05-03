@@ -30,7 +30,7 @@ class Skin:
         Credential = self.Credential
         uuid = Credential.uuid
         if not uuid:
-            raise ValueError("UUID is required to get skin and cape.")
+            raise AccountNotOwnMinecraft("UUID is required to get skin and cape.")
         # 使用 UUID 取得玩家的外觀與披風 URL
         url = f"https://sessionserver.mojang.com/session/minecraft/profile/{uuid}"
         async with aiohttp.ClientSession() as session:
@@ -85,7 +85,7 @@ class Skin:
 
         if not uuid or not access_token:
             raise NeedAccountInfo("UUID and access token are required to upload skin.")
-
+        
         url = f"https://api.mojang.com/user/profile/{uuid}/skin"
         headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -111,8 +111,8 @@ class Skin:
         uuid = Credential.uuid
         access_token = Credential.access_token
         if not uuid or not access_token:
-            raise ValueError("UUID and access token are required to reset skin.")
-
+            raise NeedAccountInfo("UUID and access token are required to reset skin.")
+        
         url = f"https://api.mojang.com/user/profile/{uuid}/skin"
         headers = {"Authorization": f"Bearer {access_token}"}
         async with aiohttp.ClientSession() as session:
