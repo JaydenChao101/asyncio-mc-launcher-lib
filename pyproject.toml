@@ -48,3 +48,5 @@ Source = "https://github.com/JaydenChao101/asyncio-mc-launcher-lib"
 [tool.setuptools.dynamic]
 version = { file = "launcher_core/version.txt" }
 
+[tool.setuptools]
+packages = ["launcher_core"]
