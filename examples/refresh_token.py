@@ -1,8 +1,11 @@
 from launcher_core import microsoft_account
+from launcher_core._types import AzureApplication, Credential
 
 async def main():
     # refresh my token
-    token = await microsoft_account.refresh_minecraft_token("your-refresh_token","your_client_id")
+    AZURE_APP = AzureApplication(client_id="your_client_id")
+    Credential1 = Credential(refresh_token="abc")
+    token = await microsoft_account.refresh_minecraft_token(AZURE_APP=AZURE_APP,Credential=Credential1)
     xbl_token = await microsoft_account.Login.get_xbl_token(token["access_token"])
     xsts_token = await microsoft_account.Login.get_xsts_token(xbl_token["Token"])
     minecraft_token = await microsoft_account.Login.get_minecraft_access_token(

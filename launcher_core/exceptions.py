@@ -194,3 +194,11 @@ class AccountNeedAdultVerification(Exception):
 
     def __init__(self) -> None:
         super().__init__("This Account needs adult verification")
+
+class NeedAccountInfo(ValueError):
+    """
+    Raised when the Account needs to be verified
+    """
+
+    def __init__(self, message: str = "The Account needs to be verified") -> None:
+        super().__init__(message)

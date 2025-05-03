@@ -203,9 +203,10 @@ class JavaPatchNotes(TypedDict):
 
 @dataclass
 class Credential:
-    access_token: str
-    username: str
-    uuid: UUID
+    access_token: str = None
+    username: str = None
+    uuid: UUID = None
+    refresh_token: str = None
 
 
 class Skin(TypedDict):
@@ -242,7 +243,8 @@ class MinecraftProfileResponse(TypedDict, total=False):
     capes: list[MinecraftProfileCape]  # 新版
 
 
-class AzureApplication(TypedDict):
+@dataclass
+class AzureApplication:
     client_id: str = "00000000402b5328"
     client_secret: str = None
     redirect_uri: str = "https://login.live.com/oauth20_desktop.srf"
